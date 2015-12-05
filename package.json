@@ -1,0 +1,50 @@
+{
+  "name": "virtual-mapdom",
+  "version": "1.0.0",
+  "description": "DOM for maps integrating with virtual-dom for use with MapboxJS",
+  "main": "index.js",
+  "scripts": {
+    "test": "browserify test/main.js -t babelify | testling | tap-spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ntilwalli/virtual-mapdom.git"
+  },
+  "keywords": [
+    "mapbox",
+    "virtual-dom"
+  ],
+  "author": "Nikhil Tilwalli",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ntilwalli/virtual-mapdom/issues"
+  },
+  "homepage": "https://github.com/ntilwalli/virtual-mapdom#readme",
+  "dependencies": {
+    "global": "^4.3.0",
+    "is-object": "^1.0.1",
+    "mapbox.js": "^2.2.3",
+    "virtual-dom": "^2.1.1",
+    "x-is-array": "^0.1.0"
+  },
+  "devDependencies": {
+    "babelify": "^7.2.0",
+    "tap-dot": "^1.0.1",
+    "tap-spec": "^4.1.1",
+    "tape": "^4.2.2",
+    "testling": "^1.7.1"
+  },
+  "babel": {
+    "presets": [
+      "es2015"
+    ],
+    "plugins": [
+      "add-module-exports"
+    ]
+  },
+  "browserify": {
+    "transform": [
+      "babelify"
+    ]
+  }
+}
