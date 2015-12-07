@@ -2,9 +2,10 @@
   "name": "virtual-mapdom",
   "version": "1.0.0",
   "description": "DOM for maps integrating with virtual-dom for use with MapboxJS",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
-    "test": "browserify test/main.js -t babelify | testling | tap-spec"
+    "test": "browserify test/main.js -t babelify | testling | tap-spec",
+    "build": "babel -d dist --ignore node_modules ."
   },
   "repository": {
     "type": "git",
