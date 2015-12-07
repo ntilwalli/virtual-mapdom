@@ -7,7 +7,7 @@ import isVNode from 'virtual-dom/vnode/is-vnode'
 const templateUrlRE = new RegExp("https?://.*{}.*")
 //const tileJSONUrlRE = new RegExp("https?.*")
 
-export function createElement(vnode, opts) {
+export function createMapElement(vnode, opts) {
 
   const doc = opts ? opts.document || document : document;
   const warn = opts ? opts.warn : null;

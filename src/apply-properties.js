@@ -86,7 +86,7 @@ function processMapProperties(node, props, previous) {
   }
 
   if(props.anchorElement) {
-    throw new Error("This property should be stripped out by render/createElement.")
+    throw new Error("This property should be stripped out by render/createMapElement.")
   }
 }
 

@@ -1,5 +1,5 @@
 import {patchRecursive} from './src/patch'
-import {createElement} from './src/create-element'
+import {createMapElement} from './src/create-element'
 import {VNode} from 'virtual-dom'
 import L from 'mapbox.js'
 //import * as document from 'global/document'
@@ -19,12 +19,12 @@ function createMapOnElement(anchorElement, accessToken, initialVDom, opts) {
 
   // Assign this property temporarily, it will be stripped off in render
   initialVDom.properties.anchorElement = anchorElement
-  anchorElement.mapDOM = createElement(initialVDom, opts)
+  anchorElement.mapDOM = createMapElement(initialVDom, opts)
   return initialVDom
 }
 
 export {
   patchRecursive,
-  createElement,
+  createMapElement,
   createMapOnElement
 }
