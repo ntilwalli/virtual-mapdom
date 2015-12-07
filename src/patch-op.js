@@ -45,7 +45,7 @@ function removeNode(domNode, vNode) {
       case 'LAYERGROUP':
       case 'TILELAYER':
         parentInstance.removeLayer(instance)
-        console.log("Removed TILELAYER or LAYERGROUP.")
+        //console.log("Removed TILELAYER or LAYERGROUP.")
         break;
       default:
         throw new Error('Invalid tagName sent for removal: ' + tagName)
@@ -89,7 +89,7 @@ function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
       case 'TILELAYER':
         parentInstance.removeLayer(oldInstance)
         parentInstance.addLayer(newInstance)
-        console.log("Patched tileLayer or layerGroup.")
+        //console.log("Patched tileLayer or layerGroup.")
         break;
       default:
         throw new Error('Invalid tagName sent for patch: ' + tagName)
