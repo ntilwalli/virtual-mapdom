@@ -1,5 +1,5 @@
 import test from 'tape'
-import {createMapElement, patchRecursive, createMapOnElement} from '../index'
+import {render, patchRecursive, createMapOnElement} from '../index'
 import L from 'mapbox.js'
 import {VNode, diff, patch} from 'virtual-dom'
 
@@ -21,15 +21,15 @@ test("map DOM element and map instance are instantiated and attached to given el
 })
 
 // createElement tests
-test("createMapElement is a function", assert => {
-    assert.equal(typeof createMapElement, "function", 'createMapElement should be a function')
+test("render is a function", assert => {
+    assert.equal(typeof render, "function", 'render should be a function')
     assert.end()
 })
 
 test("render outputs the expected mapDOM element with properties and attributes", assert => {
   let vdom = new VNode('tileLayer', {tile: "blah", attributes: {id: "someid"}})
 
-  let dom = createMapElement(vdom)
+  let dom = render(vdom)
 
   assert.equal(dom.tagName, "TILELAYER", "should create element with tagName 'TILELAYER'")
   assert.equal(dom.tile, "blah", "created element should have expected tile property value")
@@ -53,7 +53,7 @@ test("patches mapDOM element to expected properties and attributes", assert => {
   assert.deepEqual(dom.centerZoom, {zoom: 7, center:[4,5]}, "should have passed initial centerZoom value")
   let patches = diff(firstVdom, secondVdom)
 
-  let newRoot = patch(element, patches, {render: createMapElement, patch: patchRecursive})
+  let newRoot = patch(element, patches, {render: render, patch: patchRecursive})
   assert.deepEqual(dom.centerZoom, {zoom: 8, center:[5,6]}, "should have patched centerZoom value")
   assert.end()
 })
