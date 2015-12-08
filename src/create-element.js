@@ -7,10 +7,10 @@ import isVNode from 'virtual-dom/vnode/is-vnode'
 const templateUrlRE = new RegExp("https?://.*{}.*")
 //const tileJSONUrlRE = new RegExp("https?.*")
 
-export function createMapElement(vnode, opts) {
+export function createMapElement(vnode, renderOpts) {
 
-  const doc = opts ? opts.document || document : document;
-  const warn = opts ? opts.warn : null;
+  const doc = renderOpts ? renderOpts.document || document : document;
+  const warn = renderOpts ? renderOpts.warn : null;
 
   if (!isVNode(vnode)) {
     if (warn) {
@@ -52,7 +52,12 @@ export function createMapElement(vnode, opts) {
                       //console.log(node.instance)
       break
     case "CIRCLEMARKER":
-      node.instance = L.CircleMarker(properties.latLng, options)
+      let inst = L.circleMarker(properties.latLng, options)
+      let rad = properties.radius
+      if(rad) {
+        inst.setRadius(rad)
+      }
+      node.instance = inst
       break
     default:
       throw new Error("Unknown tag name: " + tagName)
@@ -62,7 +67,7 @@ export function createMapElement(vnode, opts) {
 
   var children = vnode.children;
   for (var i = 0; i < children.length; i++) {
-    var childNode = createElement(children[i], opts);
+    var childNode = createMapElement(children[i], renderOpts);
     if (childNode) {
       node.appendChild(childNode);
     }

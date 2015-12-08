@@ -102,8 +102,17 @@ function processTileLayerProperties(node, props, previous) {
 }
 
 function processCircleMarkerProperties(node, props, previous) {
+  let marker = node.instance
   if(props.latLng) {
+    let latLng = props.latLng
+    marker.setLatLng(latLng)
+    node.latLng = latLng
+  }
 
+  if (props.radius) {
+    let radius = props.radius
+    marker.setRadius(radius)
+    node.radius = radius
   }
 }
 
@@ -112,12 +121,16 @@ export function applyProperties(node, props, previous) {
 
     switch(tagName) {
       case "MAP":
-
         processMapProperties(node, props, previous)
         break
       case 'TILELAYER':
         processTileLayerProperties(node, props, previous)
         break
+      case 'CIRCLEMARKER':
+        processCircleMarkerProperties(node, props, previous)
+        break
+      default:
+        throw new Error("Invalid tagName sent: ", tagName)
     }
 
     processAttributes(node, props, previous)

@@ -44,6 +44,7 @@ function removeNode(domNode, vNode) {
     switch(tagName) {
       case 'LAYERGROUP':
       case 'TILELAYER':
+      case 'CIRCLEMARKER':
         parentInstance.removeLayer(instance)
         //console.log("Removed TILELAYER or LAYERGROUP.")
         break;
@@ -56,6 +57,20 @@ function removeNode(domNode, vNode) {
 
   return null;
 }
+
+function isLayerGroup(node) {
+  return node.tagName === 'LAYERGROUP'
+}
+
+function isMap(node) {
+  return node.tagName === 'MAP'
+}
+
+function isCircleMarker(node) {
+  return node.tagName === 'CIRCLEMARKER'
+}
+
+
 function insertNode(parentNode, vNode, renderOptions) {
   var newNode = renderOptions.render(vNode, renderOptions);
   if (parentNode) {
@@ -64,10 +79,30 @@ function insertNode(parentNode, vNode, renderOptions) {
     const tagName = newNode.tagName
     switch(tagName) {
       case 'LAYERGROUP':
+        if(isMap(parentNode) || isLayerGroup(parentNode)) {
+          parentInstance.addLayer(instance)
+        } else {
+          throw new Error("layerGroup must be child of map or layerGroup")
+        }
+        break
       case 'TILELAYER':
-        parentInstance.addLayer(instance)
-        console.log("Added TILELAYER or LAYERGROUP.")
-        break;
+        if(isMap(parentNode) || isLayerGroup(parentNode)) {
+          parentInstance.addLayer(instance)
+        } else {
+          throw new Error("tileLayer must be child of map or layerGroup")
+        }
+        break
+      case 'CIRCLEMARKER':
+
+
+        if(isMap(parentNode) || isLayerGroup(parentNode)) {
+
+          parentInstance.addLayer(instance)
+        } else {
+
+          throw new Error("circleMarker must be child of map or layerGroup")
+        }
+        break
       default:
         throw new Error('Invalid tagName sent for insert: ' + tagName)
     }
@@ -78,6 +113,7 @@ function insertNode(parentNode, vNode, renderOptions) {
 }
 
 function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
+
   var parentNode = domNode.parentNode;
   var newNode = renderOptions.render(vNode, renderOptions);
   if (parentNode && newNode !== domNode) {
@@ -87,9 +123,10 @@ function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
     switch(tagName) {
       case 'LAYERGROUP':
       case 'TILELAYER':
+      case 'CIRCLEMARKER':
         parentInstance.removeLayer(oldInstance)
         parentInstance.addLayer(newInstance)
-        //console.log("Patched tileLayer or layerGroup.")
+
         break;
       default:
         throw new Error('Invalid tagName sent for patch: ' + tagName)

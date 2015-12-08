@@ -56,6 +56,7 @@ function removeNode(domNode, vNode) {
     switch (tagName) {
       case 'LAYERGROUP':
       case 'TILELAYER':
+      case 'CIRCLEMARKER':
         parentInstance.removeLayer(instance);
         //console.log("Removed TILELAYER or LAYERGROUP.")
         break;
@@ -68,6 +69,10 @@ function removeNode(domNode, vNode) {
 
   return null;
 }
+
+// The render function is used to generate the DOM element and attach
+// the map object instance to it.  This function is applies the relationship
+// between parent and child components.
 function insertNode(parentNode, vNode, renderOptions) {
   var newNode = renderOptions.render(vNode, renderOptions);
   if (parentNode) {
@@ -77,8 +82,9 @@ function insertNode(parentNode, vNode, renderOptions) {
     switch (_tagName) {
       case 'LAYERGROUP':
       case 'TILELAYER':
+      case 'CIRCLEMARKER':
         parentInstance.addLayer(instance);
-        console.log("Added TILELAYER or LAYERGROUP.");
+        //console.log("Added TILELAYER or LAYERGROUP.");
         break;
       default:
         throw new Error('Invalid tagName sent for insert: ' + _tagName);
@@ -99,6 +105,7 @@ function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
     switch (tagName) {
       case 'LAYERGROUP':
       case 'TILELAYER':
+      case 'CIRCLEMARKER':
         parentInstance.removeLayer(oldInstance);
         parentInstance.addLayer(newInstance);
         //console.log("Patched tileLayer or layerGroup.")

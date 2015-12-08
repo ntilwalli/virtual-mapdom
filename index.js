@@ -8,8 +8,8 @@ function createMapOnElement(anchorElement, accessToken, initialVDom, opts) {
   //console.log(accessToken)
   if(!L.mapbox.accessToken) {
     L.mapbox.accessToken =  accessToken
-  }
-  else {
+  } else {
+
     console.error("Mapbox access token already set?")
   }
 
