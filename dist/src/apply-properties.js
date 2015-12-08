@@ -112,7 +112,18 @@ function processTileLayerProperties(node, props, previous) {
 }
 
 function processCircleMarkerProperties(node, props, previous) {
-  if (props.latLng) {}
+  var marker = node.instance;
+  if (props.latLng) {
+    var latLng = props.latLng;
+    marker.setLatLng(latLng);
+    node.latLng = latLng;
+  }
+
+  if (props.radius) {
+    var radius = props.radius;
+    marker.setRadius(radius);
+    node.radius = radius;
+  }
 }
 
 function applyProperties(node, props, previous) {
@@ -120,12 +131,16 @@ function applyProperties(node, props, previous) {
 
   switch (tagName) {
     case "MAP":
-
       processMapProperties(node, props, previous);
       break;
     case 'TILELAYER':
       processTileLayerProperties(node, props, previous);
       break;
+    case 'CIRCLEMARKER':
+      processCircleMarkerProperties(node, props, previous);
+      break;
+    default:
+      throw new Error("Invalid tagName sent: ", tagName);
   }
 
   processAttributes(node, props, previous);

@@ -23,10 +23,10 @@ var templateUrlRE = new RegExp("https?://.*{}.*");
 //const tileJSONUrlRE = new RegExp("https?.*")
 
 /* */
-function createMapElement(vnode, opts) {
+function createMapElement(vnode, renderOpts) {
 
-  var doc = opts ? opts.document || document : document;
-  var warn = opts ? opts.warn : null;
+  var doc = renderOpts ? renderOpts.document || document : document;
+  var warn = renderOpts ? renderOpts.warn : null;
 
   if (!(0, _isVnode2.default)(vnode)) {
     if (warn) {
@@ -67,7 +67,12 @@ function createMapElement(vnode, opts) {
       //console.log(node.instance)
       break;
     case "CIRCLEMARKER":
-      node.instance = _mapbox2.default.CircleMarker(properties.latLng, options);
+      var inst = _mapbox2.default.circleMarker(properties.latLng, options);
+      var rad = properties.radius;
+      if (rad) {
+        inst.setRadius(rad);
+      }
+      node.instance = inst;
       break;
     default:
       throw new Error("Unknown tag name: " + tagName);
@@ -77,7 +82,7 @@ function createMapElement(vnode, opts) {
 
   var children = vnode.children;
   for (var i = 0; i < children.length; i++) {
-    var childNode = createElement(children[i], opts);
+    var childNode = createMapElement(children[i], renderOpts);
     if (childNode) {
       node.appendChild(childNode);
     }

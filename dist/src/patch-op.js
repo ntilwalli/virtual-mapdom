@@ -70,9 +70,18 @@ function removeNode(domNode, vNode) {
   return null;
 }
 
-// The render function is used to generate the DOM element and attach
-// the map object instance to it.  This function is applies the relationship
-// between parent and child components.
+function isLayerGroup(node) {
+  return node.tagName === 'LAYERGROUP';
+}
+
+function isMap(node) {
+  return node.tagName === 'MAP';
+}
+
+function isCircleMarker(node) {
+  return node.tagName === 'CIRCLEMARKER';
+}
+
 function insertNode(parentNode, vNode, renderOptions) {
   var newNode = renderOptions.render(vNode, renderOptions);
   if (parentNode) {
@@ -81,10 +90,28 @@ function insertNode(parentNode, vNode, renderOptions) {
     var _tagName = newNode.tagName;
     switch (_tagName) {
       case 'LAYERGROUP':
+        if (isMap(parentNode) || isLayerGroup(parentNode)) {
+          parentInstance.addLayer(instance);
+        } else {
+          throw new Error("layerGroup must be child of map or layerGroup");
+        }
+        break;
       case 'TILELAYER':
+        if (isMap(parentNode) || isLayerGroup(parentNode)) {
+          parentInstance.addLayer(instance);
+        } else {
+          throw new Error("tileLayer must be child of map or layerGroup");
+        }
+        break;
       case 'CIRCLEMARKER':
-        parentInstance.addLayer(instance);
-        //console.log("Added TILELAYER or LAYERGROUP.");
+
+        if (isMap(parentNode) || isLayerGroup(parentNode)) {
+
+          parentInstance.addLayer(instance);
+        } else {
+
+          throw new Error("circleMarker must be child of map or layerGroup");
+        }
         break;
       default:
         throw new Error('Invalid tagName sent for insert: ' + _tagName);
@@ -96,6 +123,7 @@ function insertNode(parentNode, vNode, renderOptions) {
 }
 
 function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
+
   var parentNode = domNode.parentNode;
   var newNode = renderOptions.render(vNode, renderOptions);
   if (parentNode && newNode !== domNode) {
@@ -108,7 +136,7 @@ function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
       case 'CIRCLEMARKER':
         parentInstance.removeLayer(oldInstance);
         parentInstance.addLayer(newInstance);
-        //console.log("Patched tileLayer or layerGroup.")
+
         break;
       default:
         throw new Error('Invalid tagName sent for patch: ' + tagName);

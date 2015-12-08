@@ -24,6 +24,7 @@ function createMapOnElement(anchorElement, accessToken, initialVDom, opts) {
   if (!_mapbox2.default.mapbox.accessToken) {
     _mapbox2.default.mapbox.accessToken = accessToken;
   } else {
+
     console.error("Mapbox access token already set?");
   }
 
