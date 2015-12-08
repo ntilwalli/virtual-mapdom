@@ -9,9 +9,14 @@ var _isObject = require('is-object');
 
 var _isObject2 = _interopRequireDefault(_isObject);
 
+var _xIsArray = require('x-is-array');
+
+var _xIsArray2 = _interopRequireDefault(_xIsArray);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 // Assumes oldVal is L.LatLng and newVal is array of [lat, lng]
+/* */
 function isLatLngEqual(oldVal, newVal) {
   var newLat = newVal[0];
   var newLng = newVal[1];
@@ -27,7 +32,6 @@ function isLatLngEqual(oldVal, newVal) {
 
 // The only properties that can be used during CSS element selection
 // are standard attributes, which should be sent in vdom.properties.attributes
-/* */
 function processAttributes(node, props, previous) {
   var attributes = props.attributes;
   if (props.attributes && (0, _isObject2.default)(attributes)) {
@@ -114,9 +118,12 @@ function processTileLayerProperties(node, props, previous) {
 function processCircleMarkerProperties(node, props, previous) {
   var marker = node.instance;
   if (props.latLng) {
-    var latLng = props.latLng;
-    marker.setLatLng(latLng);
-    node.latLng = latLng;
+    var val = props.latLng;
+    if (!(0, _xIsArray2.default)(val)) {
+      val = [val[0], val[1]];
+    }
+    marker.setLatLng(val);
+    node.latLng = val;
   }
 
   if (props.radius) {

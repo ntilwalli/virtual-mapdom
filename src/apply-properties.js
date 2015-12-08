@@ -1,5 +1,6 @@
 /* */
 import isObject from 'is-object'
+import isArray from 'x-is-array'
 
 // Assumes oldVal is L.LatLng and newVal is array of [lat, lng]
 function isLatLngEqual(oldVal, newVal) {
@@ -104,9 +105,12 @@ function processTileLayerProperties(node, props, previous) {
 function processCircleMarkerProperties(node, props, previous) {
   let marker = node.instance
   if(props.latLng) {
-    let latLng = props.latLng
-    marker.setLatLng(latLng)
-    node.latLng = latLng
+    let val = props.latLng
+    if(!isArray(val)) {
+      val = [val[0], val[1]]
+    }
+    marker.setLatLng(val)
+    node.latLng = val
   }
 
   if (props.radius) {
