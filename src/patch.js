@@ -1,7 +1,3 @@
-//import * as L from 'mapbox/mapbox.js'
-//import * as Rx from 'rx'
-
- // 'x-is-array' requires babel to output in 'common' mode not 'commonStrict'
 import isArray from 'x-is-array'
 import {domIndex} from './dom-index'
 import {applyPatch as patchOp} from './patch-op'
