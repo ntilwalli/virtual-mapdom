@@ -37,10 +37,7 @@ function patchRecursive(proxyElement, patches, renderOptions) {
     rootNode = applyPatch(rootNode, index[nodeIndex], patches[nodeIndex], renderOptions);
   }
   return rootNode;
-} //import * as L from 'mapbox/mapbox.js'
-//import * as Rx from 'rx'
-
-// 'x-is-array' requires babel to output in 'common' mode not 'commonStrict'
+}
 
 function applyPatch(rootNode, domNode, patchList, renderOptions) {
   //console.log("applyPatch called...")
