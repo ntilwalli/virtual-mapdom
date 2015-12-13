@@ -20,7 +20,7 @@ function patchRecursive(proxyElement, patches, renderOptions) {
 
   var rootNode = proxyElement.mapDOM;
   var rootMap = rootNode.instance;
-  console.dir(rootNode);
+  //console.dir(rootNode)
   var indices = patchIndices(patches);
   if (indices.length === 0) {
     return rootNode;
