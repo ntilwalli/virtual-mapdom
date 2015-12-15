@@ -35,7 +35,7 @@ function applyPatch(vpatch, domNode, renderOptions) {
     //console.log("Patch-op VNODE called.")
     //return vNodePatch(domNode, vNode, patch, renderOptions);
     case _vpatch2.default.ORDER:
-      throw new Error("Reordering not supported in VMapDOM, use explicit z-index.");
+      // Don't do anything special with re-ordering...
       return domNode;
     case _vpatch2.default.PROPS:
       //console.log("Patch-op PROPS called.")
