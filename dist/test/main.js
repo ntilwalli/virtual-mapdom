@@ -63,7 +63,6 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   assert.equal(dom.tagName, "MAP", "should have root element with tagName 'MAP' ");
   assert.deepEqual(dom.centerZoom, { zoom: 7, center: [4, 5] }, "should have passed initial centerZoom value");
   var patches = (0, _virtualDom.diff)(firstVdom, secondVdom);
-
   var newRoot = (0, _virtualDom.patch)(element, patches, { render: _index.render, patch: _index.patchRecursive });
   assert.deepEqual(dom.centerZoom, { zoom: 8, center: [5, 6] }, "should have patched centerZoom value");
   assert.end();
@@ -98,9 +97,12 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   var len = cMarkers.length;
   assert.equal(len, 2, "Second map has two circleMarkers");
 
+  var cm1Marker = undefined;
+
   for (var i = 0; i < len; i++) {
     var x = cMarkers[i];
     if (x.id === "cm1") {
+      cm1Marker = x;
       assert.deepEqual(x.latLng, [12, 14], "Initial circleMarker now has updated latLng property");
       assert.deepEqual(x.radius, 4, "Initial circleMarker element has updated radius property");
     } else if (x.id === "cm2") {
@@ -112,5 +114,34 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       assert.fail();
     }
   }
+
+  var thirdVdom = new _virtualDom.VNode('map', { centerZoom: { zoom: 7, center: [4, 5] } }, [new _virtualDom.VNode('circleMarker', { key: "cm1", latLng: [12, 14], radius: 4, options: { color: '#777' }, attributes: { id: "cm1" } }), new _virtualDom.VNode('circleMarker', { key: "cm2", latLng: [1, 2], radius: 5, attributes: { id: "cm2" } })]);
+
+  patches = (0, _virtualDom.diff)(secondVdom, thirdVdom);
+  //console.log("After diff")
+  newRoot = (0, _virtualDom.patch)(element, patches, { render: _index.render, patch: _index.patchRecursive });
+  //console.log("After patch")
+  cMarkers = dom.getElementsByTagName('circleMarker');
+  len = cMarkers.length;
+  assert.equal(len, 2, "Third map still has two circleMarkers");
+
+  for (var i = 0; i < len; i++) {
+    var x = cMarkers[i];
+    if (x.id === "cm1") {
+      //console.log(x.options)
+      assert.deepEqual(x.latLng, [12, 14], "Initial circleMarker has not changed latLng property");
+      assert.deepEqual(x.radius, 4, "Initial circleMarker element has not changed radius property");
+      assert.deepEqual(x.options, { color: '#777' }, "Initial circleMarker element should now have color property");
+      assert.equal(x, cm1Marker, "No new DOM node should have been created, this one should equal the old one");
+    } else if (x.id === "cm2") {
+      assert.ok(x.latLng, "second circleMarker element has same latLng property");
+      assert.ok(x.radius, "second circleMarker element has same radius property");
+      assert.deepEqual(x.latLng, [1, 2], "second circleMarker element has expected latLng property");
+      assert.deepEqual(x.radius, 5, "second circleMarker element has expected radius property");
+    } else {
+      assert.fail();
+    }
+  }
+
   assert.end();
 });

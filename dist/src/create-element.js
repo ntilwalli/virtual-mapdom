@@ -73,6 +73,7 @@ function createMapElement(vnode, renderOpts) {
         inst.setRadius(rad);
       }
       node.instance = inst;
+
       break;
     default:
       throw new Error("Unknown tag name: " + tagName);

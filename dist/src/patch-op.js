@@ -15,6 +15,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 /* */
 function applyPatch(vpatch, domNode, renderOptions) {
+
   var type = vpatch.type;
   var vNode = vpatch.vNode;
   var patch = vpatch.patch;
@@ -30,14 +31,15 @@ function applyPatch(vpatch, domNode, renderOptions) {
     case _vpatch2.default.WIDGET:
       throw new Error("Widgets not used in VMapDOM.");
     case _vpatch2.default.VNODE:
-      //console.log("Patch-op VNODE called.")
-      return vNodePatch(domNode, vNode, patch, renderOptions);
+      throw new Error("Patch VNode called, not expected...");
+    //console.log("Patch-op VNODE called.")
+    //return vNodePatch(domNode, vNode, patch, renderOptions);
     case _vpatch2.default.ORDER:
       throw new Error("Reordering not supported in VMapDOM, use explicit z-index.");
       return domNode;
     case _vpatch2.default.PROPS:
       //console.log("Patch-op PROPS called.")
-      (0, _applyProperties.applyProperties)(domNode, patch, vNode.properties);
+      (0, _applyProperties.routePropertyChange)(domNode, vNode, patch, renderOptions);
       return domNode;
     case _vpatch2.default.THUNK:
       throw new Error("Thunks not used in VMapDOM.");
@@ -87,8 +89,8 @@ function insertNode(parentNode, vNode, renderOptions) {
   if (parentNode) {
     var instance = newNode.instance;
     var parentInstance = parentNode.instance;
-    var _tagName = newNode.tagName;
-    switch (_tagName) {
+    var tagName = newNode.tagName;
+    switch (tagName) {
       case 'LAYERGROUP':
         if (isMap(parentNode) || isLayerGroup(parentNode)) {
           parentInstance.addLayer(instance);
@@ -114,7 +116,7 @@ function insertNode(parentNode, vNode, renderOptions) {
         }
         break;
       default:
-        throw new Error('Invalid tagName sent for insert: ' + _tagName);
+        throw new Error('Invalid tagName sent for insert: ' + tagName);
     }
 
     parentNode.appendChild(newNode);
@@ -122,7 +124,7 @@ function insertNode(parentNode, vNode, renderOptions) {
   return parentNode;
 }
 
-function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
+function vNodePatch(domNode, vNode, patch, renderOptions) {
 
   var parentNode = domNode.parentNode;
   var newNode = renderOptions.render(vNode, renderOptions);
@@ -130,6 +132,7 @@ function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
     var newInstance = newNode.instance;
     var oldInstance = domNode.instance;
     var parentInstance = parentNode.instance;
+    var tagName = newNode.tagName;
     switch (tagName) {
       case 'LAYERGROUP':
       case 'TILELAYER':

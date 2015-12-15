@@ -25,7 +25,6 @@ function patchRecursive(proxyElement, patches, renderOptions) {
   if (indices.length === 0) {
     return rootNode;
   }
-
   var index = (0, _domIndex.domIndex)(rootNode, patches.a, indices);
   var ownerDocument = rootNode.ownerDocument;
   if (!renderOptions.document && ownerDocument !== document) {
@@ -36,6 +35,7 @@ function patchRecursive(proxyElement, patches, renderOptions) {
     var nodeIndex = indices[i];
     rootNode = applyPatch(rootNode, index[nodeIndex], patches[nodeIndex], renderOptions);
   }
+
   return rootNode;
 }
 
@@ -48,7 +48,9 @@ function applyPatch(rootNode, domNode, patchList, renderOptions) {
 
   if ((0, _xIsArray2.default)(patchList)) {
     for (var i = 0; i < patchList.length; i++) {
+
       newNode = (0, _patchOp.applyPatch)(patchList[i], domNode, renderOptions);
+
       if (domNode === rootNode) {
         rootNode = newNode;
       }
@@ -59,6 +61,7 @@ function applyPatch(rootNode, domNode, patchList, renderOptions) {
       rootNode = newNode;
     }
   }
+
   return rootNode;
 }
 function patchIndices(patches) {
