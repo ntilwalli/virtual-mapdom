@@ -1,13 +1,14 @@
 /* */
 import isObject from 'is-object'
 import isArray from 'x-is-array'
+import L from 'mapbox.js'
 
 // Assumes oldVal is L.LatLng and newVal is array of [lat, lng]
 function isLatLngEqual(oldVal, newVal) {
-  const newLat = newVal[0]
-  const newLng = newVal[1]
-  const oldLat = oldVal[0]
-  const oldLng = oldVal[1]
+  const newLat = newVal[0] || newVal.lat
+  const newLng = newVal[1] || newVal.lng
+  const oldLat = oldVal[0] || oldVal.lat
+  const oldLng = oldVal[1] || oldVal.lng
   //console.log("isLatLngEqual old: (", oldLat, ", ", oldLng, ") new: (", newLat, ", ", newLng, ")")
   if(oldLat === newLat && oldLng === newLng) {
     return true
@@ -33,57 +34,32 @@ function processAttributes(node, props, previous) {
   }
 }
 
+function getNewCenter(patch, previous) {
+  const lat = patch[0] || patch.lat || previous[0] || previous.lat
+  const lng = patch[1] || patch.lng || previous[1] || previous.lng
+  return [lat, lng]
+}
+
+function getNewCenterZoom(patchProps, previousProps) {
+  const {center, zoom} = previousProps || {center: [9999, 9999], zoom: 9999}
+  const newCenter = getNewCenter(patchProps.center, center)
+  const newZoom = patchProps.zoom || zoom
+  return {
+    updated: !isLatLngEqual(newCenter, center) || !(newZoom === zoom),
+    value: {center: newCenter, zoom: newZoom}
+  }
+}
+
 function processMapProperties(node, props, previous) {
+  //console.log('processMapProperties')
   if(props.centerZoom) {
-    let map = node.instance
-    let propValue = props.centerZoom
-    //console.log(props)
-
-    // Map is not initialized with center/zoom so getCenter, getZoom
-    // throw indicating that those properties should be set on map
-    // before calling getter functions.  Catch these errors allowing
-    // setView code to be called.
-    let oldCenter;
-    try {
-      oldCenter = map.getCenter()
-      oldCenter = [oldCenter.lat, oldCenter.lng]
-    } catch (e) {
-      oldCenter = [9999, 9999]
+    const {updated, value} = getNewCenterZoom(props.centerZoom, previous ? previous.centerZoom : previous)
+    if(updated) {
+      const map = node.instance
+      map.setView(value.center, value.zoom, props['zoomPanOptions'])
     }
 
-    let oldZoom;
-    try {
-      oldZoom = map.getZoom()
-    } catch (e) {
-      oldZoom = 9999
-    }
-
-    let newCenter = [];
-    if(propValue['center']) {
-      const lat = propValue['center']['0']
-      newCenter[0] = lat ? lat : oldCenter[0]
-      const lng = propValue['center']['1']
-      newCenter[1] = lng ? lng: oldCenter[1]
-    } else {
-      newCenter = oldCenter
-    }
-
-    let newZoom = propValue['zoom'] ? propValue['zoom'] : oldZoom
-
-    let latLngEq = isLatLngEqual(oldCenter, newCenter)
-    let zoomEq = (map.getZoom() === newZoom)
-
-    if(!latLngEq || !zoomEq) {
-      // console.log("Setting map centerZoom.")
-      // console.log(newCenter)
-      // console.log(newZoom)
-      map.setView(newCenter, newZoom, props['zoomPanOptions'])
-    } else {
-      //console.log("Map already at correct centerZoom")
-    }
-
-    //console.log("Synchronizing mapDOM for centerZoom")
-    node['centerZoom'] = {center: newCenter, zoom: newZoom}
+    node['centerZoom'] = value
   }
 
   if(props.anchorElement) {
@@ -118,6 +94,45 @@ function processCircleMarkerProperties(node, props, previous) {
     marker.setRadius(radius)
     node.radius = radius
   }
+
+  if (props.options) {
+    node.options = props.options
+  }
+}
+
+export function routePropertyChange (domNode, vNode, patch, renderOptions) {
+  //console.log("routePropertyChange called...")
+  const tagName = domNode.tagName
+  const vNodeProperties = vNode.properties || (vNode.properties = {})
+  const patchProperties = patch
+  const patchOptions = patchProperties.options
+
+  if (tagName === 'CIRCLEMARKER' && patchOptions) {
+
+    if (patchProperties.latLng) {
+      vNodeProperties.latLng = patchProperties.latLng
+    }
+
+    if (patchProperties.radius) {
+      vNodeProperties.radius = patchProperties.radius
+    }
+    const vNodeOptions = vNodeProperties.options || (vNodeProperties.options = {})
+
+    if (patchOptions.hasOwnProperty('color')) vNodeOptions.color = patchOptions.color
+
+    const parentInstance = domNode.parentNode.instance;
+    const oldInstance = domNode.instance
+    parentInstance.removeLayer(oldInstance)
+    const newInstance = L.circleMarker(vNodeProperties.latLng, vNodeOptions)
+    parentInstance.addLayer(newInstance)
+    domNode.instance = newInstance
+
+    applyProperties(domNode, vNodeProperties);
+
+    //applyProperties(node, vNodeProperties);
+  } else {
+    applyProperties(domNode, patchProperties, vNodeProperties)
+  }
 }
 
 export function applyProperties(node, props, previous) {
@@ -132,6 +147,7 @@ export function applyProperties(node, props, previous) {
         break
       case 'CIRCLEMARKER':
         processCircleMarkerProperties(node, props, previous)
+        //console.log(node.options)
         break
       default:
         throw new Error("Invalid tagName sent: ", tagName)

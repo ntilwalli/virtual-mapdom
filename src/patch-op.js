@@ -1,8 +1,9 @@
 /* */
-import {applyProperties} from './apply-properties'
+import {applyProperties, routePropertyChange} from './apply-properties'
 import VPatch from 'virtual-dom/vnode/vpatch'
 
 export function applyPatch(vpatch, domNode, renderOptions) {
+
   var type = vpatch.type;
   var vNode = vpatch.vNode;
   var patch = vpatch.patch;
@@ -18,14 +19,15 @@ export function applyPatch(vpatch, domNode, renderOptions) {
     case VPatch.WIDGET:
       throw new Error("Widgets not used in VMapDOM.")
     case VPatch.VNODE:
+      throw new Error("Patch VNode called, not expected...")
       //console.log("Patch-op VNODE called.")
-      return vNodePatch(domNode, vNode, patch, renderOptions);
+      //return vNodePatch(domNode, vNode, patch, renderOptions);
     case VPatch.ORDER:
       throw new Error("Reordering not supported in VMapDOM, use explicit z-index.")
       return domNode;
     case VPatch.PROPS:
       //console.log("Patch-op PROPS called.")
-      applyProperties(domNode, patch, vNode.properties);
+      routePropertyChange(domNode, vNode, patch, renderOptions)
       return domNode;
     case VPatch.THUNK:
       throw new Error("Thunks not used in VMapDOM.")
@@ -112,14 +114,15 @@ function insertNode(parentNode, vNode, renderOptions) {
   return parentNode;
 }
 
-function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
+function vNodePatch (domNode, vNode, patch, renderOptions) {
 
-  var parentNode = domNode.parentNode;
-  var newNode = renderOptions.render(vNode, renderOptions);
+  const parentNode = domNode.parentNode;
+  const newNode = renderOptions.render(vNode, renderOptions);
   if (parentNode && newNode !== domNode) {
     const newInstance = newNode.instance
     const oldInstance = domNode.instance
     const parentInstance = parentNode.instance
+    const tagName = newNode.tagName
     switch(tagName) {
       case 'LAYERGROUP':
       case 'TILELAYER':
