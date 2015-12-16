@@ -2,13 +2,26 @@
 import isObject from 'is-object'
 import isArray from 'x-is-array'
 import L from 'mapbox.js'
+import {getMarkerIcon} from './create-element'
+
+function getLatLng (latLng) {
+  return [
+    latLng[0] || latLng.lat, // || throw new Error("No latitude found"),
+    latLng[1] || latLng.lng // || throw new Error("No longitude found")
+  ]
+}
+
+function setLatLngAttributes(node, latLng) {
+  const val = getLatLng(latLng)
+  node.setAttribute('latLng', JSON.stringify(val))
+
+}
 
 // Assumes oldVal is L.LatLng and newVal is array of [lat, lng]
 function isLatLngEqual(oldVal, newVal) {
-  const newLat = newVal[0] || newVal.lat
-  const newLng = newVal[1] || newVal.lng
-  const oldLat = oldVal[0] || oldVal.lat
-  const oldLng = oldVal[1] || oldVal.lng
+  const [newLat, newLng] = getLatLng(newVal)
+  const [oldLat, oldLng] = getLatLng(oldVal)
+
   //console.log("isLatLngEqual old: (", oldLat, ", ", oldLng, ") new: (", newLat, ", ", newLng, ")")
   if(oldLat === newLat && oldLng === newLng) {
     return true
@@ -59,7 +72,7 @@ function processMapProperties(node, props, previous) {
       map.setView(value.center, value.zoom, props['zoomPanOptions'])
     }
 
-    node['centerZoom'] = value
+    node.setAttribute('centerZoom', JSON.stringify(value))
   }
 
   if(props.anchorElement) {
@@ -73,7 +86,7 @@ function processTileLayerProperties(node, props, previous) {
 
   if(props.tile) {
     if(!node.tile) {
-      node.tile = props.tile
+      node.setAttribute('tile', props.tile)
     }
   }
 }
@@ -81,22 +94,55 @@ function processTileLayerProperties(node, props, previous) {
 function processCircleMarkerProperties(node, props, previous) {
   let marker = node.instance
   if(props.latLng) {
-    let val = props.latLng
-    if(!isArray(val)) {
-      val = [val[0], val[1]]
-    }
+    const val = getLatLng(props.latLng)
     marker.setLatLng(val)
-    node.latLng = val
+    setLatLngAttributes(node, val)
   }
 
   if (props.radius) {
     let radius = props.radius
     marker.setRadius(radius)
-    node.radius = radius
+    node.setAttribute('radius', radius)
   }
 
   if (props.options) {
-    node.options = props.options
+    node.setAttribute('options', JSON.stringify(props.options))
+  }
+}
+
+function processMarkerProperties(node, props, previous) {
+  const marker = node.instance
+  const latLng = props.latLng
+
+  if (latLng) {
+    let val = getLatLng(latLng)
+    marker.setLatLng(val)
+    setLatLngAttributes(node, val)
+  }
+
+  const options = props.options
+  if (options) {
+    const zIndexOffset = options.zIndexOffset
+    if (zIndexOffset) {
+      marker.setZIndexOffset(zIndexOffset)
+      node.setAttribute('zIndexOffset', zIndexOffset)
+    }
+
+    const opacity = options.opacity
+    if (opacity) {
+      marker.setOpacity(opacity)
+      node.setAttribute('opacity', opacity)
+    }
+  }
+}
+
+function processIconProperties(node, props, previous) {
+  const marker = node.instance
+  const latLng = props.latLng
+
+  const options = props.options
+  if (options) {
+    node.setAttribute('options', JSON.stringify(options))
   }
 }
 
@@ -107,29 +153,50 @@ export function routePropertyChange (domNode, vNode, patch, renderOptions) {
   const patchProperties = patch
   const patchOptions = patchProperties.options
 
-  if (tagName === 'CIRCLEMARKER' && patchOptions) {
+  if (tagName === 'CIRCLEMARKER' || tagName === 'DIVICON' || tagName === 'ICON') {
 
-    if (patchProperties.latLng) {
-      vNodeProperties.latLng = patchProperties.latLng
-    }
-
-    if (patchProperties.radius) {
-      vNodeProperties.radius = patchProperties.radius
-    }
     const vNodeOptions = vNodeProperties.options || (vNodeProperties.options = {})
+    const parentNode = domNode.parentNode
+    const parentInstance = parentNode.instance;
 
-    if (patchOptions.hasOwnProperty('color')) vNodeOptions.color = patchOptions.color
+    if (patchOptions) {
+      switch (tagName) {
+        case 'CIRCLEMARKER':
+          if (patchProperties.latLng) {
+            vNodeProperties.latLng = patchProperties.latLng
+          }
 
-    const parentInstance = domNode.parentNode.instance;
-    const oldInstance = domNode.instance
-    parentInstance.removeLayer(oldInstance)
-    const newInstance = L.circleMarker(vNodeProperties.latLng, vNodeOptions)
-    parentInstance.addLayer(newInstance)
-    domNode.instance = newInstance
+          if (patchProperties.radius) {
+            vNodeProperties.radius = patchProperties.radius
+          }
 
-    applyProperties(domNode, vNodeProperties);
+          if (patchOptions.hasOwnProperty('color')) vNodeOptions.color = patchOptions.color
 
-    //applyProperties(node, vNodeProperties);
+          const oldInstance = domNode.instance
+          parentInstance.removeLayer(oldInstance)
+          const newInstance = L.circleMarker(vNodeProperties.latLng, vNodeOptions)
+          parentInstance.addLayer(newInstance)
+          domNode.instance = newInstance
+
+          applyProperties(domNode, vNodeProperties);
+
+          break
+        case 'DIVICON':
+        case 'ICON':
+          for (let p in patchOptions) {
+            vNodeOptions[p] = patchOptions[p]
+          }
+
+          const icon = getMarkerIcon(vNode)
+          parentInstance.setIcon(icon)
+          applyProperties(domNode, vNodeProperties)
+          break
+        default:
+          throw new Error("Invalid tagName sent: ", tagName)
+      }
+    } else {
+      applyProperties(domNode, patchProperties, vNodeProperties)
+    }
   } else {
     applyProperties(domNode, patchProperties, vNodeProperties)
   }
@@ -147,7 +214,13 @@ export function applyProperties(node, props, previous) {
         break
       case 'CIRCLEMARKER':
         processCircleMarkerProperties(node, props, previous)
-        //console.log(node.options)
+        break
+      case 'MARKER':
+        processMarkerProperties(node, props, previous)
+        break
+      case 'DIVICON':
+      case 'ICON':
+        processIconProperties(node, props, previous)
         break
       default:
         throw new Error("Invalid tagName sent: ", tagName)
