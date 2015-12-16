@@ -183,12 +183,14 @@ export function routePropertyChange (domNode, vNode, patch, renderOptions) {
           break
         case 'DIVICON':
         case 'ICON':
+          console.log("Swapping icon...")
           for (let p in patchOptions) {
             vNodeOptions[p] = patchOptions[p]
           }
-
+          console.log(vNode)
           const icon = getMarkerIcon(vNode)
           parentInstance.setIcon(icon)
+          domNode.instance = icon
           applyProperties(domNode, vNodeProperties)
           break
         default:
@@ -220,6 +222,7 @@ export function applyProperties(node, props, previous) {
         break
       case 'DIVICON':
       case 'ICON':
+        console.log('process icon properties')
         processIconProperties(node, props, previous)
         break
       default:

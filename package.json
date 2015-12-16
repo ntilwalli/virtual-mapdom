@@ -34,6 +34,7 @@
     "tap-dot": "^1.0.1",
     "tap-spec": "^4.1.1",
     "tape": "^4.2.2",
+    "tape-catch": "^1.0.4",
     "testling": "^1.7.1"
   },
   "jspm": {

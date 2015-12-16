@@ -56,11 +56,15 @@ function removeNode(domNode, vNode) {
     var parentInstance = parentNode.instance;
     var tagName = domNode.tagName;
     switch (tagName) {
-      case 'LAYERGROUP':
       case 'TILELAYER':
       case 'CIRCLEMARKER':
+      case 'MARKER':
         parentInstance.removeLayer(instance);
         //console.log("Removed TILELAYER or LAYERGROUP.")
+        break;
+      case 'DIVICON':
+      case 'ICON':
+        parentInstance.setIcon(L.Icon.Default());
         break;
       default:
         throw new Error('Invalid tagName sent for removal: ' + tagName);
@@ -72,10 +76,6 @@ function removeNode(domNode, vNode) {
   return null;
 }
 
-function isLayerGroup(node) {
-  return node.tagName === 'LAYERGROUP';
-}
-
 function isMap(node) {
   return node.tagName === 'MAP';
 }
@@ -84,68 +84,68 @@ function isCircleMarker(node) {
   return node.tagName === 'CIRCLEMARKER';
 }
 
+function isMarker(node) {
+  return node.tagName === 'MARKER';
+}
+
+function allowsChildren(parentNode) {
+  return isMap(parentNode) || isMarker(parentNode);
+}
+
 function insertNode(parentNode, vNode, renderOptions) {
   var newNode = renderOptions.render(vNode, renderOptions);
   if (parentNode) {
-    var instance = newNode.instance;
-    var parentInstance = parentNode.instance;
-    var tagName = newNode.tagName;
-    switch (tagName) {
-      case 'LAYERGROUP':
-        if (isMap(parentNode) || isLayerGroup(parentNode)) {
-          parentInstance.addLayer(instance);
-        } else {
-          throw new Error("layerGroup must be child of map or layerGroup");
-        }
-        break;
-      case 'TILELAYER':
-        if (isMap(parentNode) || isLayerGroup(parentNode)) {
-          parentInstance.addLayer(instance);
-        } else {
-          throw new Error("tileLayer must be child of map or layerGroup");
-        }
-        break;
-      case 'CIRCLEMARKER':
+    if (allowsChildren(parentNode)) {
+      var instance = newNode.instance;
+      var parentInstance = parentNode.instance;
+      var tagName = newNode.tagName;
 
-        if (isMap(parentNode) || isLayerGroup(parentNode)) {
-
+      switch (tagName) {
+        case 'TILELAYER':
+        case 'CIRCLEMARKER':
+        case 'MARKER':
           parentInstance.addLayer(instance);
-        } else {
+          break;
+        case 'DIVICON':
+        case 'ICON':
+          console.log("Setting icon...");
+          parentInstance.setIcon(instance);
+          break;
+        default:
+          throw new Error('Invalid tagName sent for insert: ' + tagName);
+      }
 
-          throw new Error("circleMarker must be child of map or layerGroup");
-        }
-        break;
-      default:
-        throw new Error('Invalid tagName sent for insert: ' + tagName);
+      parentNode.appendChild(newNode);
+    } else {
+      throw new Error('Parent node does not allow insert.');
     }
-
-    parentNode.appendChild(newNode);
   }
+
   return parentNode;
 }
 
-function vNodePatch(domNode, vNode, patch, renderOptions) {
-
-  var parentNode = domNode.parentNode;
-  var newNode = renderOptions.render(vNode, renderOptions);
-  if (parentNode && newNode !== domNode) {
-    var newInstance = newNode.instance;
-    var oldInstance = domNode.instance;
-    var parentInstance = parentNode.instance;
-    var tagName = newNode.tagName;
-    switch (tagName) {
-      case 'LAYERGROUP':
-      case 'TILELAYER':
-      case 'CIRCLEMARKER':
-        parentInstance.removeLayer(oldInstance);
-        parentInstance.addLayer(newInstance);
-
-        break;
-      default:
-        throw new Error('Invalid tagName sent for patch: ' + tagName);
-    }
-
-    parentNode.replaceChild(newNode, domNode);
-  }
-  return newNode;
-}
+// function vNodePatch (domNode, vNode, patch, renderOptions) {
+//
+//   const parentNode = domNode.parentNode;
+//   const newNode = renderOptions.render(vNode, renderOptions);
+//   if (parentNode && newNode !== domNode) {
+//     const newInstance = newNode.instance
+//     const oldInstance = domNode.instance
+//     const parentInstance = parentNode.instance
+//     const tagName = newNode.tagName
+//     switch(tagName) {
+//       case 'TILELAYER':
+//       case 'CIRCLEMARKER':
+//       case 'MARKER':
+//         parentInstance.removeLayer(oldInstance)
+//         parentInstance.addLayer(newInstance)
+//
+//         break;
+//       default:
+//         throw new Error('Invalid tagName sent for patch: ' + tagName)
+//     }
+//
+//     parentNode.replaceChild(newNode, domNode);
+//   }
+//   return newNode;
+// }

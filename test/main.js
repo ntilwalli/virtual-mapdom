@@ -1,4 +1,4 @@
-import test from 'tape'
+import test from 'tape-catch'
 import {render, patchRecursive, createMapOnElement} from '../index'
 import L from 'mapbox.js'
 import {VNode, diff, patch} from 'virtual-dom'
@@ -142,4 +142,69 @@ test("patches circleMarker element to expected properties and attributes", asser
 
 
   assert.end()
+})
+
+
+test("patches marker element to expected properties and attributes", t => {
+  let element = document.createElement('div')
+  let firstVdom = new VNode('map', {centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('marker', {latLng: [10,11], attributes: {id: "m1"}}, [
+      new VNode('divIcon', {options: {iconSize: 20, html: 'some random text'}, attributes: {id: 'd1'}}, [], 'd1')
+    ], "m1")
+  ])
+
+  createMapOnElement(element, "pk.eyJ1IjoibXJyZWRlYXJzIiwiYSI6IjQtVVRTZkEifQ.ef_cKBTmj8rSr7VypppZdg", firstVdom)
+
+  let dom = element.mapDOM
+  let markers = dom.getElementsByTagName('marker')
+  t.equal(markers.length, 1, "Initial map has a marker")
+  let m1 = markers[0]
+  t.equal(m1.tagName, "MARKER", "Has expected tagName")
+  t.ok(m1.instance, "Has instance property")
+  t.ok(m1.getAttribute('latLng'), "Initial marker element has latLng property")
+
+
+  let icons = dom.getElementsByTagName('divIcon')
+  t.equal(icons.length, 1, "Initial map has a divIcon")
+  let icon1 = icons[0]
+  t.equal(icon1.tagName, "DIVICON", "Has expected tagName")
+  t.ok(icon1.instance, "Has instance property")
+  t.deepEqual(icon1.parentNode.tagName, 'MARKER', "divIcon has marker for parent")
+
+  let secondVdom = new VNode('map', {centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('marker', {latLng: [12, 14], attributes: {id: "m1"}}, [
+      new VNode('divIcon', {options: {iconSize: 25, html: 'some random text'}, attributes: {id: 'd1'}}, [], 'd1')
+    ], "m1"),
+    new VNode('marker', {latLng: [1, 2], attributes: {id: "m2"}}, [], "m2"),
+  ])
+
+  let patches = diff(firstVdom, secondVdom)
+  let newRoot = patch(element, patches, {render: render, patch: patchRecursive})
+  markers = dom.getElementsByTagName('marker')
+  let len = markers.length
+  t.equal(len, 2, "Second map has two markers")
+
+  let x
+  for(let i=0; i < markers.length; i++) {
+    x = markers[i]
+
+    console.log('blah')
+    console.log(x)
+
+    if(x.id === "m1") {
+      t.deepEqual(JSON.parse(x.getAttribute('latLng')), [12,14], "Initial marker now has updated latLng property")
+    } else if(x.id === "m2") {
+      t.ok(x.getAttribute('latLng'), "second marker element has latLng property")
+      t.deepEqual(JSON.parse(x.getAttribute('latLng')), [1,2], "second circleMarker element has expected latLng property")
+    } else {
+      t.fail()
+    }
+  }
+
+  icons = dom.getElementsByTagName('divIcon')
+  t.equal(icons.length, 1, "Second map has one divIcon")
+  x = icons[0]
+  t.deepEqual(JSON.parse(x.getAttribute('options')), {iconSize: 25, html: 'some random text'}, "Updated icon has expected options value")
+  t.end()
+
 })

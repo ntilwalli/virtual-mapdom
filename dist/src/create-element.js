@@ -4,6 +4,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.createMapElement = createMapElement;
+exports.getMarkerIcon = getMarkerIcon;
 
 var _mapbox = require('mapbox.js');
 
@@ -39,8 +40,8 @@ function createMapElement(vnode, renderOpts) {
 
   var node = document.createElement(tagName);
   var properties = vnode.properties;
-  var options = properties.options;
-
+  var options = properties.options || {};
+  var inst = undefined;
   switch (tagName) {
     case "MAP":
 
@@ -51,35 +52,52 @@ function createMapElement(vnode, renderOpts) {
 
       node.instance = _mapbox2.default.mapbox.map(properties.anchorElement, null, options);
       delete properties.anchorElement;
-      //
+      (0, _applyProperties.applyProperties)(node, properties);
       break;
     case "TILELAYER":
       var tileStyle = properties.tile;
       if (templateUrlRE.test(tileStyle)) {
         node.instance = _mapbox2.default.TileLayer(tileStyle, options);
       } else {
-
         // There are three types of tile styles for Mapbox (id, url, tileJSON)
         // and they're all called the same way so no need to distinguish
         node.instance = _mapbox2.default.mapbox.tileLayer(tileStyle, options);
       }
-
-      //console.log(node.instance)
+      (0, _applyProperties.applyProperties)(node, properties);
       break;
     case "CIRCLEMARKER":
-      var inst = _mapbox2.default.circleMarker(properties.latLng, options);
+      inst = _mapbox2.default.circleMarker(properties.latLng, options);
       var rad = properties.radius;
       if (rad) {
         inst.setRadius(rad);
       }
       node.instance = inst;
+      (0, _applyProperties.applyProperties)(node, properties);
+      return node;
+    case "MARKER":
+      // const children = vnode.children
+      // let icon
+      // if(children && children.length) {
+      //   icon = getMarkerIcon(children[0])
+      // }
 
+      // Will default to L.Icon.Default() if undefined
+      //options.icon = new L.Icon.Default()
+      inst = _mapbox2.default.marker(properties.latLng, options);
+
+      node.instance = inst;
+      (0, _applyProperties.applyProperties)(node, properties);
       break;
+    case "DIVICON":
+    case "ICON":
+      console.log("Creating icon...");
+      node.instance = getMarkerIcon(vnode);
+      console.log(node.instance);
+      (0, _applyProperties.applyProperties)(node, properties);
+      return node;
     default:
       throw new Error("Unknown tag name: " + tagName);
   }
-
-  (0, _applyProperties.applyProperties)(node, properties);
 
   var children = vnode.children;
   for (var i = 0; i < children.length; i++) {
@@ -90,4 +108,38 @@ function createMapElement(vnode, renderOpts) {
   }
 
   return node;
+}
+
+/**
+DIVICON options
+  iconSize: Point
+  iconAnchor: Point
+  className: string
+  html: string
+ICON options
+  iconUrl: 'my-icon.png',
+  iconRetinaUrl: 'my-icon@2x.png',
+  iconSize: [38, 95],
+  iconAnchor: [22, 94],
+  popupAnchor: [-3, -76],
+  shadowUrl: 'my-icon-shadow.png',
+  shadowRetinaUrl: 'my-icon-shadow@2x.png',
+  shadowSize: [68, 95],
+  shadowAnchor: [22, 94]
+*/
+
+function getMarkerIcon(vNode) {
+  var tagName = vNode.tagName.toUpperCase();
+  var properties = vNode.properties;
+  var options = properties ? properties.options : {};
+  console.log(tagName);
+  switch (tagName) {
+    case 'DIVICON':
+      console.log('creating divIcon');
+      return _mapbox2.default.divIcon(options);
+    case 'ICON':
+      return _mapbox2.default.icon(options);
+    default:
+      throw new Error("Invalid marker icon requested.");
+  }
 }

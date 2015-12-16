@@ -96,7 +96,8 @@ function insertNode(parentNode, vNode, renderOptions) {
           break
         case 'DIVICON':
         case 'ICON':
-          parentInstance.setIcon(L.Icon.Default())
+          console.log("Setting icon...")
+          parentInstance.setIcon(instance)
           break
         default:
           throw new Error('Invalid tagName sent for insert: ' + tagName)

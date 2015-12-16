@@ -22,8 +22,8 @@ export function createMapElement(vnode, renderOpts) {
   const tagName = vnode.tagName.toUpperCase()
 
   var node = document.createElement(tagName)
-  const properties = vnode.properties
-  const options = properties.options
+  let properties = vnode.properties
+  let options = properties.options || {}
   let inst
   switch(tagName) {
     case "MAP":
@@ -65,14 +65,17 @@ export function createMapElement(vnode, renderOpts) {
       // }
 
       // Will default to L.Icon.Default() if undefined
-      options.icon = L.Icon.Default()
-      inst = L.Marker(properties.latLng, options)
+      //options.icon = new L.Icon.Default()
+      inst = L.marker(properties.latLng, options)
+
       node.instance = inst
       applyProperties(node, properties);
       break
     case "DIVICON":
     case "ICON":
+      console.log("Creating icon...")
       node.instance = getMarkerIcon(vnode)
+      console.log(node.instance)
       applyProperties(node, properties)
       return node
     default:
@@ -109,13 +112,17 @@ ICON options
 */
 
 export function getMarkerIcon (vNode) {
-  const tagName = vNode.tagName
+  const tagName = vNode.tagName.toUpperCase()
   const properties = vNode.properties
   const options = properties ? properties.options : {}
+  console.log(tagName)
   switch (tagName) {
     case `DIVICON`:
+      console.log(`creating divIcon`)
       return L.divIcon(options)
     case `ICON`:
-      return L.Icon(options)
+      return L.icon(options)
+    default:
+      throw new Error("Invalid marker icon requested.")
   }
 }
