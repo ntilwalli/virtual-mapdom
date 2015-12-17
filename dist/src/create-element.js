@@ -90,8 +90,9 @@ function createMapElement(vnode, renderOpts, parent) {
     return null;
   }
 
+  //console.log(vnode)
   var tagName = vnode.tagName.toUpperCase();
-
+  //console.log(vnode)
   var node = document.createElement(tagName);
   var properties = vnode.properties;
   var options = properties.options || {};

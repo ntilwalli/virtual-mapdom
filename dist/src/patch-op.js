@@ -4,6 +4,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.applyPatch = applyPatch;
+exports.removeNode = removeNode;
 
 var _applyProperties = require('./apply-properties');
 
@@ -39,8 +40,7 @@ function applyPatch(vpatch, domNode, renderOptions) {
       return domNode;
     case _vpatch2.default.PROPS:
       //console.log("Patch-op PROPS called.")
-      (0, _applyProperties.routePropertyChange)(domNode, vNode, patch, renderOptions);
-      return domNode;
+      return (0, _applyProperties.routePropertyChange)(domNode, vNode, patch, renderOptions);
     case _vpatch2.default.THUNK:
       throw new Error("Thunks not used in VMapDOM.");
     default:
@@ -61,6 +61,7 @@ function removeNode(domNode, vNode) {
       case 'MARKER':
       case 'LAYERGROUP':
       case 'FEATUREGROUP':
+        console.log('Removing layer...');
         parentInstance.removeLayer(instance);
         break;
       case 'DIVICON':

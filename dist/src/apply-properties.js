@@ -16,11 +16,21 @@ var _xIsArray = require('x-is-array');
 
 var _xIsArray2 = _interopRequireDefault(_xIsArray);
 
+var _deepAssign = require('deep-assign');
+
+var _deepAssign2 = _interopRequireDefault(_deepAssign);
+
+var _objectAssign = require('object-assign');
+
+var _objectAssign2 = _interopRequireDefault(_objectAssign);
+
 var _mapbox = require('mapbox.js');
 
 var _mapbox2 = _interopRequireDefault(_mapbox);
 
 var _createElement = require('./create-element');
+
+var _patchOp = require('./patch-op');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -185,84 +195,59 @@ function processFeatureGroupProperties(node, props, previous) {
   var previousStyle = previous ? previous.style || {} : {};
 
   if (style) {
-    for (var p in style) {
-      previousStyle[p] = style[p];
-    }
+    (0, _objectAssign2.default)(previousStyle, style);
+    // for (let p in style) {
+    //   previousStyle[p] = style[p]
+    // }
     featureGroup.setStyle(previousStyle);
     node.setAttribute('style', JSON.stringify(previousStyle));
   }
 }
 
+// Currently this replaces DOM nodes which could be replaced instead
+// but since this is a rare event and this code is easier to read
+// do it this way for now, can optimize later.
+function replaceNode(domNode, vNode, patch, renderOptions) {
+  var parentNode = domNode.parentNode;
+  (0, _patchOp.removeNode)(domNode, vNode);
+  (0, _deepAssign2.default)(vNode.properties, patch);
+  return renderOptions.render(vNode, renderOptions, parentNode);
+}
+
 function routePropertyChange(domNode, vNode, patch, renderOptions) {
   //console.log(`routePropertyChange called...`)
   var tagName = domNode.tagName;
-  var vNodeProperties = vNode.properties || (vNode.properties = {});
-  var patchProperties = patch;
-  var patchOptions = patchProperties.options;
+  vNode.properties || (vNode.properties = {});
 
-  if (tagName === 'CIRCLEMARKER' || tagName === 'DIVICON' || tagName === 'ICON' || tagName === 'TILELAYER') {
-    var vNodeOptions = vNodeProperties.options || (vNodeProperties.options = {});
-    var parentNode = domNode.parentNode;
-    var parentInstance = parentNode.instance;
-
+  if (tagName === 'CIRCLEMARKER' || tagName === 'DIVICON' || tagName === 'ICON' || tagName === 'TILELAYER' || tagName === 'MARKER') {
     if (tagName === 'TILELAYER') {
-
-      for (var p in patchOptions) {
-        vNodeOptions[p] = patchOptions[p];
-      }
-
-      if (patchProperties.tile) {
-        vNodeProperties.tile = patchProperties.tile;
-      }
-
-      parentInstance.removeLayer(domNode.instance);
-      var inst = (0, _createElement.getTileLayer)(vNodeProperties.tile, vNodeOptions);
-      domNode.instance = inst;
-      parentInstance.addLayer(inst);
-      applyProperties(domNode, vNodeProperties);
-    } else if (patchOptions) {
-      switch (tagName) {
-        case 'CIRCLEMARKER':
-          if (patchProperties.latLng) {
-            vNodeProperties.latLng = patchProperties.latLng;
-          }
-
-          if (patchProperties.radius) {
-            vNodeProperties.radius = patchProperties.radius;
-          }
-
-          if (patchOptions.hasOwnProperty('color')) vNodeOptions.color = patchOptions.color;
-
-          var oldInstance = domNode.instance;
-          parentInstance.removeLayer(oldInstance);
-          var newInstance = _mapbox2.default.circleMarker(vNodeProperties.latLng, vNodeOptions);
-          parentInstance.addLayer(newInstance);
-          domNode.instance = newInstance;
-
-          applyProperties(domNode, vNodeProperties);
-
-          break;
-        case 'DIVICON':
-        case 'ICON':
-
-          for (var p in patchOptions) {
-            vNodeOptions[p] = patchOptions[p];
-          }
-
-          var icon = (0, _createElement.getMarkerIcon)(vNode);
-          parentInstance.setIcon(icon);
-          domNode.instance = icon;
-          applyProperties(domNode, vNodeProperties);
-          break;
-
-        default:
-          throw new Error("Invalid tagName sent: ", tagName);
-      }
+      return replaceNode(domNode, vNode, patch, renderOptions);
     } else {
-      applyProperties(domNode, patchProperties, vNodeProperties);
+      if (patch.options) {
+        switch (tagName) {
+          case 'MARKER':
+          case 'CIRCLEMARKER':
+            return replaceNode(domNode, vNode, patch, renderOptions);
+          case 'DIVICON':
+          case 'ICON':
+            (0, _deepAssign2.default)(vNode.properties, patch);
+            var icon = (0, _createElement.getMarkerIcon)(vNode);
+            var parentInstance = domNode.parentNode.instance;
+            parentInstance.setIcon(icon);
+            domNode.instance = icon;
+            applyProperties(domNode, vNode.properties);
+            return domNode;
+          default:
+            throw new Error("Invalid tagName sent: ", tagName);
+        }
+      } else {
+        applyProperties(domNode, patch, vNode.properties);
+        return domNode;
+      }
     }
   } else {
-    applyProperties(domNode, patchProperties, vNodeProperties);
+    applyProperties(domNode, patch, vNode.properties);
+    return domNode;
   }
 }
 

@@ -278,7 +278,8 @@ function jsonAttribute(node, name) {
   assert.equal(dom.id, 'someid', 'should have expected element id ');
   var newvdom = new _virtualDom.VNode('map', { anchorElement: element1, centerZoom: { zoom: 7, center: [4, 5] } }, [new _virtualDom.VNode('tileLayer', { tile: 'notblah', attributes: { id: 'someid' } }, [])]);
   var patches = (0, _virtualDom.diff)(vdom, newvdom);
-  var newDom = (0, _virtualDom.patch)(rootDom, patches, { render: _index.render, patch: _index.patchRecursive });
+  (0, _virtualDom.patch)(rootDom, patches, { render: _index.render, patch: _index.patchRecursive });
+  dom = rootDom.children[0];
   assert.equal(dom.getAttribute('tile'), 'notblah', 'should have updated tile value');
   assert.equal(dom.id, 'someid', 'should have same element id');
   assert.end();
