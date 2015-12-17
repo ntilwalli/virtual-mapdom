@@ -19,9 +19,9 @@ export function applyPatch(vpatch, domNode, renderOptions) {
     case VPatch.WIDGET:
       throw new Error("Widgets not used in VMapDOM.")
     case VPatch.VNODE:
-      throw new Error("Patch VNode called, not expected...")
+      //throw new Error("Patch VNode called, not expected...")
       //console.log("Patch-op VNODE called.")
-      //return vNodePatch(domNode, vNode, patch, renderOptions);
+      return vNodePatch(domNode, vNode, patch, renderOptions);
     case VPatch.ORDER:
       // Don't do anything special with re-ordering...
       return domNode;
@@ -66,9 +66,24 @@ function removeNode(domNode, vNode) {
 }
 
 function insertNode(parentNode, vNode, renderOptions) {
-  var newNode = renderOptions.render(vNode, renderOptions, parentNode);
+  let newNode = renderOptions.render(vNode, renderOptions, parentNode);
   //parentNode.appendChild(newNode);
   return parentNode;
+}
+
+function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
+    // console.log(domNode)
+    // console.log(leftVNode)
+    // console.log(vNode)
+    let parentNode = domNode.parentNode
+    removeNode(domNode, leftVNode)
+    let newNode = renderOptions.render(vNode, renderOptions, parentNode)
+
+    // if (parentNode && newNode !== domNode) {
+    //     parentNode.replaceChild(newNode, domNode)
+    // }
+
+    return newNode
 }
 
 // function vNodePatch (domNode, vNode, patch, renderOptions) {

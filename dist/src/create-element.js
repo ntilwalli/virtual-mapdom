@@ -142,6 +142,7 @@ function createMapElement(vnode, renderOpts, parent) {
           throw new Error("Invalid child VNode for map: " + tagName);
         }
       }
+      parent.appendChild(node);
       return node;
     case 'FEATUREGROUP':
       if (!validFeatureGroupParent(parent)) throw new Error('Invalid featureGroup parent element');
@@ -163,6 +164,7 @@ function createMapElement(vnode, renderOpts, parent) {
           throw new Error("Invalid child VNode for map: " + tagName);
         }
       }
+      parent.appendChild(node);
       return node;
 
     case 'TILELAYER':
@@ -177,6 +179,7 @@ function createMapElement(vnode, renderOpts, parent) {
       parent.instance.addLayer(inst);
 
       (0, _applyProperties.applyProperties)(node, properties);
+      parent.appendChild(node);
       return node;
     case "CIRCLEMARKER":
       if (!validMarkerParent(parent)) throw new Error('Invalid circleMarker parent element');
@@ -191,6 +194,7 @@ function createMapElement(vnode, renderOpts, parent) {
       inst.setRadius(radius);
       node.instance = inst;
       (0, _applyProperties.applyProperties)(node, properties);
+      parent.appendChild(node);
       return node;
     case "MARKER":
       if (!validMarkerParent(parent)) throw new Error('Invalid marker parent element');
@@ -212,6 +216,7 @@ function createMapElement(vnode, renderOpts, parent) {
 
       node.instance = _mapbox2.default.marker(latLng, options);
       (0, _applyProperties.applyProperties)(node, properties);
+      parent.appendChild(node);
       return node;
     case "DIVICON":
     case "ICON":
@@ -228,6 +233,7 @@ function createMapElement(vnode, renderOpts, parent) {
         parentInstance.setIcon(inst);
 
         (0, _applyProperties.applyProperties)(node, properties);
+        parent.appendChild(node);
       } else {
         // The marker is directly asking for this, so no need to self-register
         node.instance = getMarkerIcon(vnode);
