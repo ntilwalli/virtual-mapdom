@@ -256,10 +256,12 @@ function jsonAttribute(node, name) {
   var vdom = new _virtualDom.VNode('map', { anchorElement: element1, centerZoom: { zoom: 7, center: [4, 5] }, attributes: { id: 'someid' } }, [], 'test');
   var dom = (0, _index.render)(vdom);
   assert.deepEqual(jsonAttribute(dom, 'centerZoom'), { zoom: 7, center: [4, 5] }, 'should have expected centerZoom value');
-  var newvdom = new _virtualDom.VNode('map', { anchorElement: element1, centerZoom: { zoom: 8, center: [6, 5] }, attributes: { id: 'someid' } }, [], 'test');
+  var newvdom = new _virtualDom.VNode('map', { anchorElement: element1, centerZoom: { zoom: 8, center: [6, 5] }, attributes: { id: 'someid' } }, [new _virtualDom.VNode('tileLayer', { tile: 'blah', attributes: { id: 'someid2' } })], 'test');
   var patches = (0, _virtualDom.diff)(vdom, newvdom);
   var newDom = (0, _virtualDom.patch)(dom, patches, { render: _index.render, patch: _index.patchRecursive });
   assert.deepEqual(jsonAttribute(dom, 'centerZoom'), { zoom: 8, center: [6, 5] }, 'should have updated centerZoom value');
+  assert.equal(dom, newDom, 'should return same root dom element reference');
+  assert.equal(dom.children.length, 1, 'should have one child');
   assert.end();
 });
 
