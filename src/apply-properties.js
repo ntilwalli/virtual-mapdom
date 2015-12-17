@@ -2,7 +2,6 @@
 import isObject from 'is-object'
 import isArray from 'x-is-array'
 import deepAssign from 'deep-assign'
-import objectAssign from 'object-assign'
 import L from 'mapbox.js'
 import {getMarkerIcon, getTileLayer} from './create-element'
 import {removeNode} from './patch-op'
@@ -150,7 +149,7 @@ function processFeatureGroupProperties(node, props, previous) {
   const previousStyle = previous ? previous.style || {} : {}
 
   if (style) {
-    objectAssign(previousStyle, style)
+    deepAssign(previousStyle, style)
     // for (let p in style) {
     //   previousStyle[p] = style[p]
     // }
