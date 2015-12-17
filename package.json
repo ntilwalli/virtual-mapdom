@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/ntilwalli/virtual-mapdom#readme",
   "dependencies": {
+    "deep-assign": "^2.0.0",
     "global": "^4.3.0",
     "is-object": "^1.0.1",
     "mapbox.js": "^2.2.3",
@@ -31,8 +32,6 @@
   "devDependencies": {
     "babel-preset-es2015": "^6.3.13",
     "babelify": "^7.2.0",
-    "deep-assign": "^2.0.0",
-    "object-assign": "^4.0.1",
     "tap-dot": "^1.0.1",
     "tap-spec": "^4.1.1",
     "tape": "^4.2.2",
