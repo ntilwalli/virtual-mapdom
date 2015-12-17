@@ -141,7 +141,7 @@ export function createMapElement (vnode, renderOpts, parent) {
         child = children[i]
         childTagName = child.tagName.toUpperCase()
         if (validFeatureGroupChild(child)) {
-          var childNode = createMapElement(children[i], renderOpts);
+          var childNode = createMapElement(children[i], renderOpts, node);
           if (childNode) {
             node.appendChild(childNode);
           }
@@ -162,7 +162,6 @@ export function createMapElement (vnode, renderOpts, parent) {
 
       node.instance = inst
       parent.instance.addLayer(inst)
-
       applyProperties(node, properties);
       parent.appendChild(node);
       return node
@@ -178,6 +177,7 @@ export function createMapElement (vnode, renderOpts, parent) {
       inst = L.circleMarker(latLng, options)
       inst.setRadius(radius)
       node.instance = inst
+      parent.instance.addLayer(inst)
       applyProperties(node, properties);
       parent.appendChild(node);
       return node
@@ -199,17 +199,21 @@ export function createMapElement (vnode, renderOpts, parent) {
         }
       }
 
-      node.instance = L.marker(latLng, options)
+      inst = L.marker(latLng, options)
+      node.instance = inst
+      parent.instance.addLayer(inst)
       applyProperties(node, properties);
       parent.appendChild(node);
       return node
     case "DIVICON":
     case "ICON":
       if (parent) {
-        // If parent is sent then it means the marker is not requesting the icon
-        // directly, and that this element creation is being done via a patch
-        // directly on the icon element, meaning we want to keep the marker but
-        // change the icon
+        // If parent is sent then it means the icon element is being patched directly
+        // which implies we want to keep the existing marker (which is not being)
+        // patched and just swap out the icon.  When no parent is sent, that
+        // means a marker is asking for this element during it's own creation
+        // above and will manage the registration and appending the element
+        // as a child.
         if(!validMarkerIconParent(parent)) throw new Error(`Invalid icon parent element`)
 
         const parentInstance = parent.instance
@@ -220,7 +224,7 @@ export function createMapElement (vnode, renderOpts, parent) {
         applyProperties(node, properties)
         parent.appendChild(node);
       } else {
-        // The marker is directly asking for this, so no need to self-register
+        // The marker creation code is asking for this so no need to self-register
         node.instance = getMarkerIcon(vnode)
         applyProperties(node, properties)
       }
