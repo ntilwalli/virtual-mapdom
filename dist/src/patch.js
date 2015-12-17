@@ -15,11 +15,11 @@ var _patchOp = require('./patch-op');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function patchRecursive(proxyElement, patches, renderOptions) {
+function patchRecursive(rootNode, patches, renderOptions) {
   //console.log('Called patchRecursive...')
 
-  var rootNode = proxyElement.mapDOM;
-  var rootMap = rootNode.instance;
+  //let rootNode = proxyElement.mapDOM
+
   //console.dir(rootNode)
   var indices = patchIndices(patches);
   if (indices.length === 0) {

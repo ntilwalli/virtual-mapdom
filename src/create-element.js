@@ -5,9 +5,70 @@ import {applyProperties} from './apply-properties'
 import isVNode from 'virtual-dom/vnode/is-vnode'
 
 const templateUrlRE = new RegExp("https?://.*{}.*")
-//const tileJSONUrlRE = new RegExp("https?.*")
 
-export function createMapElement(vnode, renderOpts) {
+export function getTileLayer (tileStyle, options) {
+  if (templateUrlRE.test(tileStyle)) {
+    return L.TileLayer(tileStyle, options)
+  } else {
+    // There are three types of tile styles for Mapbox (id, url, tileJSON)
+    // and they're all called the same way so no need to distinguish
+    return L.mapbox.tileLayer(tileStyle, options)
+  }
+}
+
+function validMapChild (vNode) {
+  const tagName = vNode.tagName.toUpperCase()
+  return tagName === `TILELAYER` || tagName === `CIRCLEMARKER` ||
+         tagName === `MARKER` || tagName === `LAYERGROUP` ||
+         tagName === `FEATUREGROUP`
+}
+
+function validLayerGroupChild (vNode) {
+  const tagName = vNode.tagName.toUpperCase()
+  return tagName === `CIRCLEMARKER` || tagName === `MARKER` ||
+         tagName === `LAYERGROUP` || tagName === `FEATUREGROUP`
+}
+
+function validLayerGroupParent (vNode) {
+  const tagName = vNode.tagName.toUpperCase()
+  return tagName === `MAP` || tagName === `LAYERGROUP` ||
+         tagName === `FEATUREGROUP`
+}
+
+function validTileLayerParent (vNode) {
+  const tagName = vNode.tagName.toUpperCase()
+  return tagName === `MAP`
+}
+
+function validFeatureGroupChild (vNode) {
+  const tagName = vNode.tagName.toUpperCase()
+  return tagName === `CIRCLEMARKER` || tagName === `MARKER` ||
+         tagName === `LAYERGROUP` || tagName === `FEATUREGROUP`
+}
+
+function validFeatureGroupParent (vNode) {
+  const tagName = vNode.tagName.toUpperCase()
+  return tagName === `MAP` || tagName === `LAYERGROUP` ||
+         tagName === `FEATUREGROUP`
+}
+
+function validMarkerChild (vNode) {
+  const tagName = vNode.tagName.toUpperCase()
+  return tagName === `DIVICON` || tagName === `ICON`
+}
+
+function validMarkerParent (vNode) {
+  const tagName = vNode.tagName.toUpperCase()
+  return tagName === `MAP` || tagName === `LAYERGROUP` ||
+         tagName === `FEATUREGROUP`
+}
+
+function validMarkerIconParent (vNode) {
+  const tagName = vNode.tagName.toUpperCase()
+  return tagName === `MARKER`
+}
+
+export function createMapElement (vnode, renderOpts, parent) {
 
   const doc = renderOpts ? renderOpts.document || document : document;
   const warn = renderOpts ? renderOpts.warn : null;
@@ -24,73 +85,145 @@ export function createMapElement(vnode, renderOpts) {
   var node = document.createElement(tagName)
   let properties = vnode.properties
   let options = properties.options || {}
-  let inst
+  let inst, latLng, radius, children, child, childTagName
   switch(tagName) {
-    case "MAP":
-
-    //console.log(L)
-      if(!properties.anchorElement) {
-        throw new Error('anchorElement must be given as property when creating a new map.')
-      }
+    case 'MAP':
+      if (!properties.anchorElement) throw new Error(`'anchorElement' must be given as property when creating a map.`)
+      if (parent) throw new Error (`map element must be the root, cannot have a parent.`)
 
       node.instance = L.mapbox.map(properties.anchorElement, null, options)
-      delete properties.anchorElement
       applyProperties(node, properties);
-      break
-    case "TILELAYER":
+
+      children = vnode.children;
+      for (var i = 0; i < children.length; i++) {
+        child = children[i]
+        if (validMapChild(child)) {
+          var childNode = createMapElement(child, renderOpts, node);
+          if (childNode) {
+            node.appendChild(childNode);
+          }
+        } else {
+          throw new Error("Invalid child VNode for map: " + tagName)
+        }
+      }
+
+      return node;
+    case 'LAYERGROUP':
+      if(!validLayerGroupParent(parent)) throw new Error(`Invalid layerGroup parent element`)
+
+      inst = L.layerGroup()
+      node.instance = inst
+      parent.instance.addLayer(inst)
+      applyProperties(node, properties);
+      children = vnode.children;
+      for (var i = 0; i < children.length; i++) {
+        child = children[i]
+        if (validLayerGroupChild(child)) {
+          var childNode = createMapElement(children[i], renderOpts, node);
+          if (childNode) {
+            node.appendChild(childNode);
+          }
+        } else {
+          throw new Error("Invalid child VNode for map: " + tagName)
+        }
+      }
+      return node
+    case 'FEATUREGROUP':
+      if(!validFeatureGroupParent(parent)) throw new Error(`Invalid featureGroup parent element`)
+
+      inst = L.featureGroup()
+      node.instance = inst
+      parent.instance.addLayer(inst)
+      applyProperties(node, properties);
+      children = vnode.children;
+      for (var i = 0; i < children.length; i++) {
+        child = children[i]
+        childTagName = child.tagName.toUpperCase()
+        if (validFeatureGroupChild(child)) {
+          var childNode = createMapElement(children[i], renderOpts);
+          if (childNode) {
+            node.appendChild(childNode);
+          }
+        } else {
+          throw new Error("Invalid child VNode for map: " + tagName)
+        }
+      }
+      return node
+
+    case 'TILELAYER':
+      if(!validTileLayerParent(parent)) throw new Error(`Invalid tileLayer parent element`)
+
       const tileStyle = properties.tile
-      if(templateUrlRE.test(tileStyle)) {
-        node.instance = L.TileLayer(tileStyle, options)
-      } else {
-        // There are three types of tile styles for Mapbox (id, url, tileJSON)
-        // and they're all called the same way so no need to distinguish
-        node.instance = L.mapbox.tileLayer(tileStyle, options)
-      }
+      if (!tileStyle) throw new Error(`'tile' must be given as property when creating a tileLayer.`)
+
+      inst = getTileLayer(tileStyle, options)
+
+      node.instance = inst
+      parent.instance.addLayer(inst)
+
       applyProperties(node, properties);
-      break
+      return node
     case "CIRCLEMARKER":
-      inst = L.circleMarker(properties.latLng, options)
-      let rad = properties.radius
-      if(rad) {
-        inst.setRadius(rad)
-      }
+      if(!validMarkerParent(parent)) throw new Error(`Invalid circleMarker parent element`)
+
+      latLng = properties.latLng
+      if (!latLng) throw new Error(`'latLng' must be given as property when creating a circleMarker.`)
+
+      radius = properties.radius
+      if (!radius) throw new Error(`'radius' must be given as property when creating a circleMarker.`)
+
+      inst = L.circleMarker(latLng, options)
+      inst.setRadius(radius)
       node.instance = inst
       applyProperties(node, properties);
       return node
     case "MARKER":
-      // const children = vnode.children
-      // let icon
-      // if(children && children.length) {
-      //   icon = getMarkerIcon(children[0])
-      // }
+      if(!validMarkerParent(parent)) throw new Error(`Invalid marker parent element`)
 
-      // Will default to L.Icon.Default() if undefined
-      //options.icon = new L.Icon.Default()
-      inst = L.marker(properties.latLng, options)
+      latLng = properties.latLng
+      if (!latLng) throw new Error(`'latLng' must be given as property when creating a marker.`)
 
-      node.instance = inst
+      children = vnode.children;
+      // Will default to new L.Icon.Default() no icon children defined
+      if(children.length) {
+        child = children[0]
+        childTagName = child.tagName.toUpperCase()
+        if (validMarkerChild(child)) {
+          let childNode = createMapElement(child, renderOpts); // consciously not sending parent here
+          node.appendChild(childNode);
+          options.icon = childNode.instance
+        }
+      }
+
+      node.instance = L.marker(latLng, options)
       applyProperties(node, properties);
-      break
+      return node
     case "DIVICON":
     case "ICON":
-      console.log("Creating icon...")
-      node.instance = getMarkerIcon(vnode)
-      console.log(node.instance)
-      applyProperties(node, properties)
+      if (parent) {
+        // If parent is sent then it means the marker is not requesting the icon
+        // directly, and that this element creation is being done via a patch
+        // directly on the icon element, meaning we want to keep the marker but
+        // change the icon
+        if(!validMarkerIconParent(parent)) throw new Error(`Invalid icon parent element`)
+
+        const parentInstance = parent.instance
+        inst = getMarkerIcon(vnode)
+        node.instance = inst
+        parentInstance.setIcon(inst)
+
+        applyProperties(node, properties)
+
+      } else {
+        // The marker is directly asking for this, so no need to self-register
+        node.instance = getMarkerIcon(vnode)
+        applyProperties(node, properties)
+      }
+
       return node
     default:
       throw new Error("Unknown tag name: " + tagName)
   }
-
-  var children = vnode.children;
-  for (var i = 0; i < children.length; i++) {
-    var childNode = createMapElement(children[i], renderOpts);
-    if (childNode) {
-      node.appendChild(childNode);
-    }
-  }
-
-  return node;
 }
 
 /**
@@ -115,14 +248,14 @@ export function getMarkerIcon (vNode) {
   const tagName = vNode.tagName.toUpperCase()
   const properties = vNode.properties
   const options = properties ? properties.options : {}
-  console.log(tagName)
+
   switch (tagName) {
     case `DIVICON`:
-      console.log(`creating divIcon`)
       return L.divIcon(options)
     case `ICON`:
       return L.icon(options)
     default:
-      throw new Error("Invalid marker icon requested.")
+      break
+      //return new L.Icon.Default()
   }
 }

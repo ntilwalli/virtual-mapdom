@@ -2,16 +2,9 @@
 import isObject from 'is-object'
 import isArray from 'x-is-array'
 import L from 'mapbox.js'
-import {getMarkerIcon} from './create-element'
+import {getMarkerIcon, getTileLayer} from './create-element'
 
-function getLatLng (latLng) {
-  return [
-    latLng[0] || latLng.lat, // || throw new Error("No latitude found"),
-    latLng[1] || latLng.lng // || throw new Error("No longitude found")
-  ]
-}
-
-function setLatLngAttributes(node, latLng) {
+function setLatLngAttribute(node, latLng) {
   const val = getLatLng(latLng)
   node.setAttribute('latLng', JSON.stringify(val))
 
@@ -47,7 +40,7 @@ function processAttributes(node, props, previous) {
   }
 }
 
-function getNewCenter(patch, previous) {
+function getLatLng(patch, previous) {
   const lat = patch[0] || patch.lat || previous[0] || previous.lat
   const lng = patch[1] || patch.lng || previous[1] || previous.lng
   return [lat, lng]
@@ -55,7 +48,7 @@ function getNewCenter(patch, previous) {
 
 function getNewCenterZoom(patchProps, previousProps) {
   const {center, zoom} = previousProps || {center: [9999, 9999], zoom: 9999}
-  const newCenter = getNewCenter(patchProps.center, center)
+  const newCenter = getLatLng(patchProps.center, center)
   const newZoom = patchProps.zoom || zoom
   return {
     updated: !isLatLngEqual(newCenter, center) || !(newZoom === zoom),
@@ -70,33 +63,35 @@ function processMapProperties(node, props, previous) {
     if(updated) {
       const map = node.instance
       map.setView(value.center, value.zoom, props['zoomPanOptions'])
+      node.setAttribute('centerZoom', JSON.stringify(value))
     }
-
-    node.setAttribute('centerZoom', JSON.stringify(value))
   }
 
-  if(props.anchorElement) {
-    throw new Error("This property should be stripped out by render/createMapElement.")
-  }
+  // if(props.anchorElement) {
+  //   throw new Error("This property should be stripped out by render/createMapElement.")
+  // }
 }
 
 function processTileLayerProperties(node, props, previous) {
-  // Only on initialization is something done here because tileLayers are currently manipulated at element
-  // creation, individual property update/patch is not currently supported
-
-  if(props.tile) {
-    if(!node.tile) {
-      node.setAttribute('tile', props.tile)
-    }
+  // tileLayer can't be modified, it can only be fully replaced which is
+  // done elsewhere, this function just manages updating the DOM attributes
+  // for display during debugging
+  if (props.tile) {
+    node.setAttribute('tile', props.tile)
   }
+
+  if (props.options) {
+    node.setAttribute('options', JSON.stringify(props.options))
+  }
+
 }
 
 function processCircleMarkerProperties(node, props, previous) {
   let marker = node.instance
   if(props.latLng) {
-    const val = getLatLng(props.latLng)
+    const val = getLatLng(props.latLng, previous ? previous.latLng : previous)
     marker.setLatLng(val)
-    setLatLngAttributes(node, val)
+    setLatLngAttribute(node, val)
   }
 
   if (props.radius) {
@@ -115,9 +110,9 @@ function processMarkerProperties(node, props, previous) {
   const latLng = props.latLng
 
   if (latLng) {
-    let val = getLatLng(latLng)
+    let val = getLatLng(latLng, previous ? previous.latLng : previous)
     marker.setLatLng(val)
-    setLatLngAttributes(node, val)
+    setLatLngAttribute(node, val)
   }
 
   const options = props.options
@@ -146,20 +141,49 @@ function processIconProperties(node, props, previous) {
   }
 }
 
+function processFeatureGroupProperties(node, props, previous) {
+  const featureGroup = node.instance
+  const style = props.style
+  const previousStyle = previous ? previous.style || {} : {}
+
+  if (style) {
+    for (let p in style) {
+      previousStyle[p] = style[p]
+    }
+    featureGroup.setStyle(previousStyle)
+    node.setAttribute('style', JSON.stringify(previousStyle))
+  }
+}
+
 export function routePropertyChange (domNode, vNode, patch, renderOptions) {
-  //console.log("routePropertyChange called...")
+  //console.log(`routePropertyChange called...`)
   const tagName = domNode.tagName
   const vNodeProperties = vNode.properties || (vNode.properties = {})
   const patchProperties = patch
   const patchOptions = patchProperties.options
 
-  if (tagName === 'CIRCLEMARKER' || tagName === 'DIVICON' || tagName === 'ICON') {
-
+  if (tagName === 'CIRCLEMARKER' || tagName === 'DIVICON' || tagName === 'ICON' || tagName === 'TILELAYER') {
     const vNodeOptions = vNodeProperties.options || (vNodeProperties.options = {})
     const parentNode = domNode.parentNode
     const parentInstance = parentNode.instance;
 
-    if (patchOptions) {
+    if (tagName === `TILELAYER`) {
+
+        for (let p in patchOptions) {
+          vNodeOptions[p] = patchOptions[p]
+        }
+
+        if (patchProperties.tile) {
+          vNodeProperties.tile = patchProperties.tile
+        }
+
+        parentInstance.removeLayer(domNode.instance)
+        const inst = getTileLayer(vNodeProperties.tile, vNodeOptions)
+        domNode.instance = inst
+        parentInstance.addLayer(inst)
+        applyProperties(domNode, vNodeProperties)
+
+    } else if (patchOptions) {
       switch (tagName) {
         case 'CIRCLEMARKER':
           if (patchProperties.latLng) {
@@ -183,16 +207,17 @@ export function routePropertyChange (domNode, vNode, patch, renderOptions) {
           break
         case 'DIVICON':
         case 'ICON':
-          console.log("Swapping icon...")
+
           for (let p in patchOptions) {
             vNodeOptions[p] = patchOptions[p]
           }
-          console.log(vNode)
+
           const icon = getMarkerIcon(vNode)
           parentInstance.setIcon(icon)
           domNode.instance = icon
           applyProperties(domNode, vNodeProperties)
           break
+
         default:
           throw new Error("Invalid tagName sent: ", tagName)
       }
@@ -222,8 +247,12 @@ export function applyProperties(node, props, previous) {
         break
       case 'DIVICON':
       case 'ICON':
-        console.log('process icon properties')
         processIconProperties(node, props, previous)
+        break
+      case 'LAYERGROUP':
+        break
+      case 'FEATUREGROUP':
+        processFeatureGroupProperties(node, props, previous)
         break
       default:
         throw new Error("Invalid tagName sent: ", tagName)

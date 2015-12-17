@@ -2,11 +2,11 @@ import isArray from 'x-is-array'
 import {domIndex} from './dom-index'
 import {applyPatch as patchOp} from './patch-op'
 
-export function patchRecursive(proxyElement, patches, renderOptions) {
+export function patchRecursive(rootNode, patches, renderOptions) {
   //console.log('Called patchRecursive...')
 
-  let rootNode = proxyElement.mapDOM
-  let rootMap = rootNode.instance
+  //let rootNode = proxyElement.mapDOM
+
   //console.dir(rootNode)
   var indices = patchIndices(patches);
   if (indices.length === 0) {
@@ -48,7 +48,7 @@ function applyPatch(rootNode, domNode, patchList, renderOptions) {
       rootNode = newNode;
     }
   }
-      
+
   return rootNode;
 }
 function patchIndices(patches) {

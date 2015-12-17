@@ -3,208 +3,447 @@ import {render, patchRecursive, createMapOnElement} from '../index'
 import L from 'mapbox.js'
 import {VNode, diff, patch} from 'virtual-dom'
 
+function jsonAttribute(node, name) {
+  return JSON.parse(node.getAttribute(name))
+}
 
-// createMapOnElement tests
-test("createMapOnElement is a function", assert => {
-  assert.equal(typeof createMapOnElement, "function", "createMapOnElement should be a function")
+test("render map", assert => {
+  assert.throws(() => render(new VNode(`map`), {}), `should throw when missing 'anchorElement' in properties`)
+  const element1 = document.createElement('div')
+  assert.throws(() => render(new VNode(`map`, {anchorElement: element1}, [
+    new VNode(`divIcon`)
+  ])), `should throw when given unsupported child element VNode`)
+  const element2 = document.createElement('div')
+  const vdom = new VNode('map', {anchorElement: element2, centerZoom: {zoom: 7, center: [4, 5]}, attributes: {id: `someid`}})
+  const dom = render(vdom)
+  assert.equal(dom instanceof Element, true, `should be instance of Element`)
+  assert.equal(dom.tagName, "MAP", "should have tagName 'MAP'")
+  assert.ok(dom.getAttribute('centerZoom'), "should have centerZoom attribute")
+  assert.deepEqual(jsonAttribute(dom, 'centerZoom'), {zoom: 7, center: [4, 5]}, "should have expected value")
+  assert.equal(dom.id, "someid", "should have expected id")
+  assert.ok(dom.instance, `should have 'instance' property`)
+  assert.equal(dom.instance instanceof L.Map, true, "should be an L.Map")
   assert.end()
 })
 
-test("map DOM element and map instance are instantiated and attached to given element", assert => {
-  let element = document.createElement('div')
+test("createMapOnElement", assert => {
+  assert.throws(() => createMapOnElement(), "should throw when missing required arguments")
+  const element = document.createElement('div')
+  assert.throws(() => createMapOnElement(3, 'thing', new VNode('map')), "should throw when anchorElement is not an Element")
+  assert.throws(() => createMapOnElement(element, 3, new VNode('map')), "should throw when accessToken is not a string")
+  assert.throws(() => createMapOnElement(element, "thing", 3), "should throw when initialVDom is not a VNode")
+
   const options = { zoomControl: false }
-  createMapOnElement(element, "pk.eyJ1IjoibXJyZWRlYXJzIiwiYSI6IjQtVVRTZkEifQ.ef_cKBTmj8rSr7VypppZdg", new VNode('map', {options}))
-  assert.equal(element.mapDOM.tagName, 'MAP', "property mapDOM should contain element with tagName 'MAP'")
-  assert.equal(true, element.mapDOM.instance instanceof L.Map, "property mapDOM should have have instance property that is an L.Map")
+  createMapOnElement(element, `pk.eyJ1IjoibXJyZWRlYXJzIiwiYSI6IjQtVVRTZkEifQ.ef_cKBTmj8rSr7VypppZdg`, new VNode(`map`, {options}))
+  const dom = element.mapDOM
+  assert.ok(dom, "should create mapDOM property on element")
+  assert.equal(dom instanceof Element, true, `should be instance of Element`)
+  assert.equal(dom.tagName, `MAP`, `should have tagName 'MAP'`)
+  assert.ok(dom, `should have 'instance' property`)
+  assert.equal(element.mapDOM.instance instanceof L.Map, true, `should be an L.Map`)
   assert.end()
 
 })
 
-// createElement tests
-test("render is a function", assert => {
-    assert.equal(typeof render, "function", 'render should be a function')
-    assert.end()
-})
-
-test("render outputs the expected mapDOM element with properties and attributes", assert => {
-  let vdom = new VNode('tileLayer', {tile: "blah", attributes: {id: "someid"}})
-
-  let dom = render(vdom)
-
-  assert.equal(dom.tagName, "TILELAYER", "should create element with tagName 'TILELAYER'")
-  assert.equal(dom.getAttribute('tile'), "blah", "created element should have expected tile property value")
-  assert.deepEqual(dom.id, "someid", "created element should expected id property value")
+test("render tileLayer", assert => {
+  assert.throws(() => render(new VNode(`tileLayer`), {}), `should throw when missing parent element`)
+  const element1 = document.createElement('div')
+  const invalid = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+      new VNode('tileLayer', {})
+    ])
+  assert.throws(() => render(invalid), `should throw when missing 'tile' property`)
+  const element2 = document.createElement('div')
+  const valid = new VNode('map', {anchorElement: element2, centerZoom: {zoom: 7, center: [4, 5]}}, [
+      new VNode('tileLayer', {tile: `blah`, attributes: {id: `someid`}})
+    ])
+  const rootDom = render(valid)
+  assert.ok(rootDom.children, "should have children")
+  assert.equal(rootDom.children.length, 1, "should have one child")
+  const dom = rootDom.children[0]
+  assert.equal(dom.tagName, "TILELAYER", "should have tagName 'TILELAYER'")
+  assert.ok(dom.getAttribute('tile'), "should have tile attribute")
+  assert.equal(dom.getAttribute('tile'), "blah", "should have expected value")
+  assert.deepEqual(dom.id, "someid", "should have expected id")
+  assert.ok(dom.instance, `should have 'instance' property`)
+  assert.equal(dom.instance instanceof L.TileLayer, true, "should be an L.TileLayer")
   assert.end()
 })
 
-// patchRecursive tests
-test("patch is a function", assert => {
-    assert.equal(typeof patchRecursive, "function", 'patchRecursive should be a function')
-    assert.end()
-})
-
-test("patches mapDOM element to expected properties and attributes", assert => {
-  let element = document.createElement('div')
-  let firstVdom = new VNode('map', {centerZoom: {zoom: 7, center: [4, 5]}})
-  createMapOnElement(element, "pk.eyJ1IjoibXJyZWRlYXJzIiwiYSI6IjQtVVRTZkEifQ.ef_cKBTmj8rSr7VypppZdg", firstVdom)
-  let secondVdom = new VNode('map', {centerZoom: {zoom: 8, center: [5, 6]}})
-  let dom = element.mapDOM
-  assert.equal(dom.tagName, "MAP", "should have root element with tagName 'MAP' ")
-  assert.deepEqual(JSON.parse(dom.getAttribute('centerZoom')), {zoom: 7, center:[4,5]}, "should have passed initial centerZoom value")
-  let patches = diff(firstVdom, secondVdom)
-  let newRoot = patch(element, patches, {render: render, patch: patchRecursive})
-  assert.deepEqual(JSON.parse(dom.getAttribute('centerZoom')), {zoom: 8, center:[5,6]}, "should have patched centerZoom value")
+test("render circleMarker", assert => {
+  assert.throws(() => render(new VNode(`circleMarker`), {latLng: [4, 5], radius: 3}), `should throw when missing parent element`)
+  let element1 = document.createElement('div')
+  let invalid = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+      new VNode('circleMarker', {radius: 3})
+    ])
+  assert.throws(() => render(invalid), `should throw when missing 'latLng' property`)
+  element1 = document.createElement('div')
+  invalid = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+      new VNode('circleMarker', {latLng: [4, 5]})
+    ])
+  assert.throws(() => render(invalid), `should throw when missing 'radius' property`)
+  element1 = document.createElement('div')
+  const valid = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+      new VNode('circleMarker', {latLng: [4, 5], radius: 3, attributes: {id: `someid`}})
+    ])
+  const rootDom = render(valid)
+  assert.ok(rootDom.children, "should have children")
+  assert.equal(rootDom.children.length, 1, "should have one child")
+  const dom = rootDom.children[0]
+  assert.equal(dom instanceof Element, true, `should be instance of Element`)
+  assert.equal(dom.tagName, `CIRCLEMARKER`, `should have tagName 'CIRCLEMARKER'`)
+  assert.ok(dom.getAttribute('latLng'), `should have latLng attribute`)
+  assert.deepEqual(jsonAttribute(dom, `latLng`), [4, 5], `should have expected latLng value`)
+  assert.ok(dom.getAttribute('radius'), `should have radius attribute`)
+  assert.deepEqual(jsonAttribute(dom, `radius`), 3, "should have expected radius value")
+  assert.ok(dom.instance, `should have 'instance' property`)
+  assert.equal(dom.instance instanceof L.CircleMarker, true, "should be an L.CircleMarker")
   assert.end()
 })
 
-test("patches circleMarker element to expected properties and attributes", assert => {
-  let element = document.createElement('div')
-  let firstVdom = new VNode('map', {centerZoom: {zoom: 7, center: [4, 5]}}, [
-    new VNode('circleMarker', {key: "cm1", latLng: [10,11], radius: 3, attributes: {id: "cm1"}})
-  ])
-  createMapOnElement(element, "pk.eyJ1IjoibXJyZWRlYXJzIiwiYSI6IjQtVVRTZkEifQ.ef_cKBTmj8rSr7VypppZdg", firstVdom)
-  let secondVdom = new VNode('map', {centerZoom: {zoom: 7, center: [4, 5]}}, [
-    new VNode('circleMarker', {key: "cm1", latLng: [12, 14], radius: 4, attributes: {id: "cm1"}}),
-    new VNode('circleMarker', {key: "cm2", latLng: [1, 2], radius: 5, attributes: {id: "cm2"}}),
-  ])
-  let dom = element.mapDOM
-  assert.equal(dom.tagName, "MAP", "should have root element with tagName 'MAP' ")
-  assert.deepEqual(JSON.parse(dom.getAttribute('centerZoom')), {zoom: 7, center:[4,5]}, "should have passed initial centerZoom value")
-  let cMarkers = dom.getElementsByTagName('circleMarker')
-  assert.equal(cMarkers.length, 1, "Initial map has a circleMarker")
-  let cm1 = cMarkers[0]
-  assert.equal(cm1.tagName, "CIRCLEMARKER", "Has expected tagName")
-  assert.ok(cm1.instance, "Has instance property")
+test("render marker", assert => {
+  assert.throws(() => render(new VNode(`marker`), {latLng: [4, 5]}), `should throw when missing parent element`)
+  let element1 = document.createElement('div')
+  let invalid = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+      new VNode('marker', {})
+    ])
+  assert.throws(() => render(invalid), `should throw when missing 'latLng' property`)
+  element1 = document.createElement('div')
+  const valid = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+      new VNode('marker', {latLng: [4, 5], attributes: {id: `someid`}})
+    ])
+  const rootDom = render(valid)
+  assert.ok(rootDom.children, `should have children`)
+  assert.equal(rootDom.children.length, 1, `should have one child`)
+  const dom = rootDom.children[0]
+  assert.equal(dom instanceof Element, true, `should be instance of Element`)
+  assert.equal(dom.tagName, `MARKER`, `should have tagName 'MARKER'`)
+  assert.ok(dom.getAttribute('latLng'), `should have latLng attribute`)
+  assert.deepEqual(jsonAttribute(dom, `latLng`), [4, 5], `should have expected latLng value`)
+  assert.ok(dom.instance, `should have 'instance' property`)
+  assert.equal(dom.instance instanceof L.Marker, true, `should be an L.Marker`)
+  assert.equal(dom.instance.options.icon instanceof L.Icon.Default, true, `should be an L.Icon.Default`)
+  //console.log(dom.instance)
+  assert.end()
+})
 
-  // I don't know what the type of L.circleMarker is, but it seems factory functions starting
-  // with lower case don't yield types of the same name
-  //assert.equal(true, cm1.instance instanceof L.circleMarker, "Instance has expecte type")
+test("render divIcon", assert => {
+  //assert.throws(() => render(new VNode(`divIcon`), {}), `should throw when instantiated without a marker as a parent node`)
 
-  assert.ok(cm1.getAttribute('latLng'), "Initial circleMarker element has latLng property")
-  assert.ok(cm1.getAttribute('radius'), "Initial circleMarker element has radius property")
-  assert.deepEqual(JSON.parse(cm1.getAttribute('latLng')), [10,11], "Initial circleMarker element has expected latLng value")
-  assert.deepEqual(JSON.parse(cm1.getAttribute('radius')), 3, "Initial circleMarker element has expected radius value")
-  let patches = diff(firstVdom, secondVdom)
+  let element1 = document.createElement('div')
+  const options = {iconSize: [60, 60], html: 'blah'}
+  let invalid =
+    new VNode(`map`, {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+      new VNode('layerGroup', {}, [
+        new VNode('divIcon', {options})
+      ])
+    ])
+  assert.throws(() => render(invalid), `should throw when missing parent is not marker`)
+  element1 = document.createElement('div')
+  let valid =
+    new VNode(`map`, {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+      new VNode('marker', {latLng: [4, 5]}, [
+        new VNode('divIcon', {options})
+      ])
+    ])
+  const rootDom = render(valid)
+  assert.ok(rootDom.children, `should have one map children`)
+  assert.equal(rootDom.children.length, 1, `should have one child`)
+  const markerDom = rootDom.children[0]
+  assert.ok(markerDom.instance.options, `should have 'options' property on marker.instance`)
+  assert.ok(markerDom.instance.options.icon, `should have 'icon' property on marker.instance.options`)
+  assert.equal(markerDom.instance.options.icon instanceof L.DivIcon, true, `should be instance of L.DivIcon`)
+  assert.ok(markerDom.children, `should have marker children`)
+  assert.equal(markerDom.children.length, 1, `should have one child`)
+  const dom = markerDom.children[0]
+  assert.ok(dom.instance, `should have 'instance' property on divIcon`)
+  const instance = dom.instance
+  assert.ok(instance.options, `should have 'options' property on instance`)
+  assert.equal(instance instanceof L.DivIcon, true, `should be an L.DivIcon`)
+  assert.deepEqual(instance.options.iconSize, options.iconSize, `should have expected options iconSize value`)
+  assert.deepEqual(instance.options.html, options.html, `should have expected options html value`)
 
-  let newRoot = patch(element, patches, {render: render, patch: patchRecursive})
-  cMarkers = dom.getElementsByTagName('circleMarker')
-  let len = cMarkers.length
-  assert.equal(len, 2, "Second map has two circleMarkers")
-  let cm1Marker;
+  assert.end()
+})
 
-  for(let i=0; i<len; i++) {
-    let x = cMarkers[i]
-    if(x.id === "cm1") {
-      cm1Marker = x
-      assert.deepEqual(JSON.parse(x.getAttribute('latLng')), [12,14], "Initial circleMarker now has updated latLng property")
-      assert.deepEqual(JSON.parse(x.getAttribute('radius')),   4, "Initial circleMarker element has updated radius property")
-    } else if(x.id === "cm2") {
-      assert.ok(x.getAttribute('latLng'), "second circleMarker element has latLng property")
-      assert.ok(x.getAttribute('radius'), "second circleMarker element has radius property")
-      assert.deepEqual(JSON.parse(x.getAttribute('latLng')), [1,2], "second circleMarker element has expected latLng property")
-      assert.deepEqual(JSON.parse(x.getAttribute('radius')), 5, "second circleMarker element has expected radius property")
-    } else {
-      assert.fail()
-    }
+test("render icon", assert => {
+  const options = {
+    iconUrl: 'my-icon.png',
+    iconRetinaUrl: 'my-icon@2x.png',
+    iconSize: [38, 95],
+    iconAnchor: [22, 94],
+    popupAnchor: [-3, -76],
+    shadowUrl: 'my-icon-shadow.png',
+    shadowRetinaUrl: 'my-icon-shadow@2x.png',
+    shadowSize: [68, 95],
+    shadowAnchor: [22, 94]
   }
 
-
-  let thirdVdom = new VNode('map', {centerZoom: {zoom: 7, center: [4, 5]}}, [
-    new VNode('circleMarker', {key: "cm1", latLng: [12, 14], radius: 4, options: { color: '#777' }, attributes: {id: "cm1"}}),
-    new VNode('circleMarker', {key: "cm2", latLng: [1, 2], radius: 5, attributes: {id: "cm2"}}),
-  ])
-
-  patches = diff(secondVdom, thirdVdom)
-  //console.log("After diff")
-  newRoot = patch(element, patches, {render: render, patch: patchRecursive})
-  //console.log("After patch")
-  cMarkers = dom.getElementsByTagName('circleMarker')
-  len = cMarkers.length
-  assert.equal(len, 2, "Third map still has two circleMarkers")
-
-  for(let i=0; i<len; i++) {
-    let x = cMarkers[i]
-    if(x.id === "cm1") {
-      //console.log(x.options)
-      assert.deepEqual(JSON.parse(x.getAttribute('latLng')), [12,14], "Initial circleMarker has not changed latLng property")
-      assert.deepEqual(JSON.parse(x.getAttribute('radius')), 4, "Initial circleMarker element has not changed radius property")
-      assert.deepEqual(JSON.parse(x.getAttribute('options')), { color: '#777' }, "Initial circleMarker element should now have color property")
-      assert.equal(x, cm1Marker, "No new DOM node should have been created, this one should equal the old one")
-    } else if(x.id === "cm2") {
-      assert.ok(x.getAttribute('latLng'), "second circleMarker element has same latLng property")
-      assert.ok(x.getAttribute('radius'), "second circleMarker element has same radius property")
-      assert.deepEqual(JSON.parse(x.getAttribute('latLng')), [1,2], "second circleMarker element has expected latLng property")
-      assert.deepEqual(JSON.parse(x.getAttribute('radius')), 5, "second circleMarker element has expected radius property")
-    } else {
-      assert.fail()
-    }
-  }
-
+  let element1 = document.createElement('div')
+  let invalid =
+    new VNode(`map`, {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+      new VNode('layerGroup', {}, [
+        new VNode('icon', {options})
+      ])
+    ])
+  assert.throws(() => render(invalid), `should throw when missing parent is not marker`)
+  element1 = document.createElement('div')
+  let valid =
+    new VNode(`map`, {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+      new VNode('marker', {latLng: [4, 5]}, [
+        new VNode('icon', {options})
+      ])
+    ])
+  const rootDom = render(valid)
+  assert.ok(rootDom.children, `should have one map children`)
+  assert.equal(rootDom.children.length, 1, `should have one child`)
+  const markerDom = rootDom.children[0]
+  assert.ok(markerDom.instance.options, `should have 'options' property on marker.instance`)
+  assert.ok(markerDom.instance.options.icon, `should have 'icon' property on marker.instance.options`)
+  assert.equal(markerDom.instance.options.icon instanceof L.Icon, true, `should be instance of L.Icon`)
+  assert.ok(markerDom.children, `should have marker children`)
+  assert.equal(markerDom.children.length, 1, `should have one child`)
+  const dom = markerDom.children[0]
+  assert.ok(dom.instance, `should have 'instance' property on icon`)
+  const instance = dom.instance
+  assert.ok(instance.options, `should have 'options' property on instance`)
+  assert.equal(instance instanceof L.Icon, true, `should be an L.Icon`)
+  assert.deepEqual(instance.options.iconSize, options.iconSize, `should have expected options iconSize value`)
+  assert.deepEqual(instance.options.iconUrl, options.iconUrl, `should have expected options iconUrl value`)
 
   assert.end()
 })
 
+test("render layerGroup", assert => {
+  assert.throws(() => render(new VNode(`layerGroup`), {}), `should throw when missing parent element`)
+  let element1 = document.createElement('div')
+  const valid = new VNode(`map`, {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+      new VNode(`layerGroup`, {attributes: {id: `someid`}})
+    ])
+  const rootDom = render(valid)
+  assert.ok(rootDom.children, "should have children")
+  assert.equal(rootDom.children.length, 1, "should have one child")
+  const dom = rootDom.children[0]
+  assert.equal(dom.tagName, `LAYERGROUP`, `should have tagName 'LAYERGROUP'`)
+  assert.deepEqual(dom.id, "someid", `should have expected id`)
+  assert.ok(dom.instance, `should have 'instance' property`)
+  assert.equal(dom.instance instanceof L.LayerGroup, true, `should be an L.LayerGroup`)
+  assert.end()
+})
 
-test("patches marker element to expected properties and attributes", t => {
-  let element = document.createElement('div')
-  let firstVdom = new VNode('map', {centerZoom: {zoom: 7, center: [4, 5]}}, [
-    new VNode('marker', {latLng: [10,11], attributes: {id: "m1"}}, [
-      new VNode('divIcon', {options: {iconSize: 20, html: 'some random text'}, attributes: {id: 'd1'}}, [], 'd1')
-    ], "m1")
+test("render featureGroup", assert => {
+  assert.throws(() => render(new VNode(`featureGroup`), {}), `should throw when missing parent element`)
+  let element1 = document.createElement('div')
+  const valid = new VNode(`map`, {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+      new VNode(`featureGroup`, {attributes: {id: `someid`}})
+    ])
+  const rootDom = render(valid)
+  assert.ok(rootDom.children, `should have children`)
+  assert.equal(rootDom.children.length, 1, `should have one child`)
+  const dom = rootDom.children[0]
+  assert.equal(dom.tagName, `FEATUREGROUP`, `should have tagName 'FEATUREGROUP'`)
+  assert.deepEqual(dom.id, `someid`, `should have expected id`)
+  assert.ok(dom.instance, `should have 'instance' property`)
+  assert.equal(dom.instance instanceof L.FeatureGroup, true, `should be an L.FeatureGroup`)
+  assert.end()
+})
+
+test("patch map", assert => {
+  const element1 = document.createElement('div')
+  const vdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}, attributes: {id: `someid`}}, [], `test`)
+  const dom = render(vdom)
+  assert.deepEqual(jsonAttribute(dom, `centerZoom`), {zoom: 7, center: [4, 5]}, `should have expected centerZoom value`)
+  const newvdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 8, center: [6, 5]}, attributes: {id: `someid`}}, [], `test`)
+  const patches = diff(vdom, newvdom)
+  let newDom = patch(dom, patches, {render: render, patch: patchRecursive})
+  assert.deepEqual(jsonAttribute(dom, `centerZoom`), {zoom: 8, center: [6, 5]}, `should have updated centerZoom value`)
+  assert.end()
+})
+
+test("patch tileLayer", assert => {
+  const element1 = document.createElement('div')
+  const vdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('tileLayer', {tile: `blah`, attributes: {id: `someid`}}, [])
   ])
-
-  createMapOnElement(element, "pk.eyJ1IjoibXJyZWRlYXJzIiwiYSI6IjQtVVRTZkEifQ.ef_cKBTmj8rSr7VypppZdg", firstVdom)
-
-  let dom = element.mapDOM
-  let markers = dom.getElementsByTagName('marker')
-  t.equal(markers.length, 1, "Initial map has a marker")
-  let m1 = markers[0]
-  t.equal(m1.tagName, "MARKER", "Has expected tagName")
-  t.ok(m1.instance, "Has instance property")
-  t.ok(m1.getAttribute('latLng'), "Initial marker element has latLng property")
-
-
-  let icons = dom.getElementsByTagName('divIcon')
-  t.equal(icons.length, 1, "Initial map has a divIcon")
-  let icon1 = icons[0]
-  t.equal(icon1.tagName, "DIVICON", "Has expected tagName")
-  t.ok(icon1.instance, "Has instance property")
-  t.deepEqual(icon1.parentNode.tagName, 'MARKER', "divIcon has marker for parent")
-
-  let secondVdom = new VNode('map', {centerZoom: {zoom: 7, center: [4, 5]}}, [
-    new VNode('marker', {latLng: [12, 14], attributes: {id: "m1"}}, [
-      new VNode('divIcon', {options: {iconSize: 25, html: 'some random text'}, attributes: {id: 'd1'}}, [], 'd1')
-    ], "m1"),
-    new VNode('marker', {latLng: [1, 2], attributes: {id: "m2"}}, [], "m2"),
+  const rootDom = render(vdom)
+  const dom = rootDom.children[0]
+  assert.equal(dom.getAttribute(`tile`), `blah`, `should have expected tile value`)
+  assert.equal(dom.id, `someid`, `should have expected element id `)
+  const newvdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('tileLayer', {tile: `notblah`, attributes: {id: `someid`}}, [])
   ])
+  const patches = diff(vdom, newvdom)
+  let newDom = patch(rootDom, patches, {render: render, patch: patchRecursive})
+  assert.equal(dom.getAttribute(`tile`), `notblah`, `should have updated tile value`)
+  assert.equal(dom.id, `someid`, `should have same element id`)
+  assert.end()
+})
 
-  let patches = diff(firstVdom, secondVdom)
-  let newRoot = patch(element, patches, {render: render, patch: patchRecursive})
-  markers = dom.getElementsByTagName('marker')
-  let len = markers.length
-  t.equal(len, 2, "Second map has two markers")
+test("patch circleMarker", assert => {
+  const element1 = document.createElement('div')
+  const vdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('circleMarker', {latLng: [4, 5], radius: 3, attributes: {id: `someid`}}, [])
+  ])
+  const rootDom = render(vdom)
+  const dom = rootDom.children[0]
+  assert.deepEqual(jsonAttribute(dom, `latLng`), [4, 5], `should have expected latLng value`)
+  assert.equal(jsonAttribute(dom, `radius`), 3, `should have expected radius value`)
+  assert.equal(dom.id, `someid`, `should have expected element id `)
+  const newvdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('circleMarker', {latLng: [4, 6], radius: 4, attributes: {id: `someid`}}, [])
+  ])
+  const patches = diff(vdom, newvdom)
+  let newDom = patch(rootDom, patches, {render: render, patch: patchRecursive})
+  assert.deepEqual(jsonAttribute(dom, `latLng`), [4, 6], `should have updated latLng value`)
+  assert.equal(jsonAttribute(dom, `radius`), 4, `should have updated radius value`)
+  assert.equal(dom.id, `someid`, `should have same element id`)
+  assert.end()
+})
 
-  let x
-  for(let i=0; i < markers.length; i++) {
-    x = markers[i]
+test("patch marker", assert => {
+  const element1 = document.createElement('div')
+  const vdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('marker', {latLng: [4, 5], attributes: {id: `someid`}}, [])
+  ])
+  const rootDom = render(vdom)
+  const dom = rootDom.children[0]
+  assert.deepEqual(jsonAttribute(dom, `latLng`), [4, 5], `should have expected latLng value`)
+  assert.equal(dom.id, `someid`, `should have expected element id `)
+  assert.equal(dom.instance.options.icon instanceof L.Icon.Default, true, `should be an L.Icon.Default`)
+  const newvdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('marker', {latLng: [7, 6], attributes: {id: `someid`}}, [])
+  ])
+  const patches = diff(vdom, newvdom)
+  let newDom = patch(rootDom, patches, {render: render, patch: patchRecursive})
+  assert.deepEqual(jsonAttribute(dom, `latLng`), [7, 6], `should have updated latLng value`)
+  assert.equal(dom.id, `someid`, `should have same element id`)
+  assert.equal(dom.instance.options.icon instanceof L.Icon.Default, true, `should still be an L.Icon.Default`)
+  assert.end()
+})
 
-    console.log('blah')
-    console.log(x)
+test("patch marker w/ divIcon", assert => {
+  const options = {iconSize: [60, 60], html: 'blah'}
+  const element1 = document.createElement('div')
+  const vdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('marker', {latLng: [4, 5], attributes: {id: `someid`}}, [])
+  ])
+  const rootDom = render(vdom)
+  const dom = rootDom.children[0]
+  assert.deepEqual(jsonAttribute(dom, `latLng`), [4, 5], `should have expected latLng value`)
+  assert.equal(dom.id, `someid`, `should have expected element id `)
+  assert.equal(dom.instance.options.icon instanceof L.Icon.Default, true, `should be an L.Icon.Default`)
+  const newvdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('marker', {latLng: [7, 6], attributes: {id: `someid`}}, [
+      new VNode('divIcon', {options})
+    ])
+  ])
+  const patches = diff(vdom, newvdom)
+  let newDom = patch(rootDom, patches, {render: render, patch: patchRecursive})
+  assert.deepEqual(jsonAttribute(dom, `latLng`), [7, 6], `should have updated latLng value`)
+  assert.equal(dom.id, `someid`, `should have same element id`)
+  assert.equal(dom.instance.options.icon instanceof L.DivIcon, true, `should now be an L.DivIcon`)
+  assert.end()
+})
 
-    if(x.id === "m1") {
-      t.deepEqual(JSON.parse(x.getAttribute('latLng')), [12,14], "Initial marker now has updated latLng property")
-    } else if(x.id === "m2") {
-      t.ok(x.getAttribute('latLng'), "second marker element has latLng property")
-      t.deepEqual(JSON.parse(x.getAttribute('latLng')), [1,2], "second circleMarker element has expected latLng property")
-    } else {
-      t.fail()
-    }
+test("patch marker w/ icon", assert => {
+  const options = {
+    iconUrl: 'my-icon.png',
+    iconRetinaUrl: 'my-icon@2x.png',
+    iconSize: [38, 95],
+    iconAnchor: [22, 94],
+    popupAnchor: [-3, -76],
+    shadowUrl: 'my-icon-shadow.png',
+    shadowRetinaUrl: 'my-icon-shadow@2x.png',
+    shadowSize: [68, 95],
+    shadowAnchor: [22, 94]
   }
+  const element1 = document.createElement('div')
+  const vdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('marker', {latLng: [4, 5], attributes: {id: `someid`}}, [])
+  ])
+  const rootDom = render(vdom)
+  const dom = rootDom.children[0]
+  assert.deepEqual(jsonAttribute(dom, `latLng`), [4, 5], `should have expected latLng value`)
+  assert.equal(dom.id, `someid`, `should have expected element id `)
+  assert.equal(dom.instance.options.icon instanceof L.Icon.Default, true, `should be an L.Icon.Default`)
+  const newvdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('marker', {latLng: [7, 6], attributes: {id: `someid`}}, [
+      new VNode('icon', {options})
+    ])
+  ])
+  const patches = diff(vdom, newvdom)
+  let newDom = patch(rootDom, patches, {render: render, patch: patchRecursive})
+  assert.deepEqual(jsonAttribute(dom, `latLng`), [7, 6], `should have updated latLng value`)
+  assert.equal(dom.id, `someid`, `should have same element id`)
+  assert.equal(dom.instance.options.icon instanceof L.Icon, true, `should now be an L.Icon`)
+  assert.deepEqual(dom.instance.options.icon.options.iconSize, options.iconSize, `should have expected options iconSize value`)
+  assert.deepEqual(dom.instance.options.icon.options.iconUrl, options.iconUrl, `should have expected options iconUrl value`)
+  assert.end()
+})
 
-  icons = dom.getElementsByTagName('divIcon')
-  t.equal(icons.length, 1, "Second map has one divIcon")
-  x = icons[0]
-  t.deepEqual(JSON.parse(x.getAttribute('options')), {iconSize: 25, html: 'some random text'}, "Updated icon has expected options value")
-  t.end()
+test("patch marker w/ icon options change", assert => {
+  let options = {
+    iconUrl: 'my-icon.png',
+    iconRetinaUrl: 'my-icon@2x.png',
+    iconSize: [38, 95],
+    iconAnchor: [22, 94],
+    popupAnchor: [-3, -76],
+    shadowUrl: 'my-icon-shadow.png',
+    shadowRetinaUrl: 'my-icon-shadow@2x.png',
+    shadowSize: [68, 95],
+    shadowAnchor: [22, 94]
+  }
+  const element1 = document.createElement('div')
+  const vdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('marker', {latLng: [4, 5], attributes: {id: `someid`}}, [
+      new VNode('icon', {options})
+    ])
+  ])
+  const rootDom = render(vdom)
+  const dom = rootDom.children[0]
+  assert.deepEqual(jsonAttribute(dom, `latLng`), [4, 5], `should have expected latLng value`)
+  assert.equal(dom.id, `someid`, `should have expected element id `)
+  assert.equal(dom.instance.options.icon instanceof L.Icon, true, `should be an L.Icon`)
+  options = {
+    iconUrl: 'blah',
+    iconRetinaUrl: 'my-icon@2x.png',
+    iconSize: [38, 95],
+    iconAnchor: [22, 94],
+    popupAnchor: [-3, -76],
+    shadowUrl: 'my-icon-shadow.png',
+    shadowRetinaUrl: 'my-icon-shadow@2x.png',
+    shadowSize: [68, 95],
+    shadowAnchor: [22, 94]
+  }
+  const newvdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('marker', {latLng: [4, 5], attributes: {id: `someid`}}, [
+      new VNode('icon', {options})
+    ])
+  ])
+  const patches = diff(vdom, newvdom)
+  let newDom = patch(rootDom, patches, {render: render, patch: patchRecursive})
+  assert.deepEqual(jsonAttribute(dom, `latLng`), [4, 5], `should have updated latLng value`)
+  assert.equal(dom.id, `someid`, `should have same element id`)
+  assert.equal(dom.instance.options.icon instanceof L.Icon, true, `should now be an L.Icon`)
+  assert.deepEqual(dom.instance.options.icon.options.iconSize, options.iconSize, `should have same options iconSize value`)
+  assert.deepEqual(dom.instance.options.icon.options.iconUrl, 'blah', `should have updated options iconUrl value`)
+  assert.end()
+})
 
+test("patch featureGroup", assert => {
+  const element1 = document.createElement('div')
+  const vdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('featureGroup', {style: {color: '#345'}, attributes: {id: `someid`}}, [])
+  ])
+  const rootDom = render(vdom)
+  const dom = rootDom.children[0]
+  assert.deepEqual(jsonAttribute(dom, `style`), {color: `#345`}, `should have expected style value`)
+  assert.equal(dom.id, `someid`, `should have expected element id `)
+  const newvdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
+    new VNode('featureGroup', {style: {color: `#327`}, attributes: {id: `someid`}}, [])
+  ])
+  const patches = diff(vdom, newvdom)
+  let newDom = patch(rootDom, patches, {render: render, patch: patchRecursive})
+  assert.deepEqual(jsonAttribute(dom, `style`), {color: `#327`}, `should have updated style value`)
+  assert.equal(dom.id, `someid`, `should have same element id`)
+  assert.end()
 })

@@ -47,12 +47,13 @@ function removeNode(domNode, vNode) {
       case 'TILELAYER':
       case 'CIRCLEMARKER':
       case 'MARKER':
+      case 'LAYERGROUP':
+      case 'FEATUREGROUP':
         parentInstance.removeLayer(instance)
-        //console.log("Removed TILELAYER or LAYERGROUP.")
         break;
       case 'DIVICON':
       case 'ICON':
-        parentInstance.setIcon(L.Icon.Default())
+        parentInstance.setIcon(new L.Icon.Default())
         break
       default:
         throw new Error('Invalid tagName sent for removal: ' + tagName)
@@ -64,52 +65,8 @@ function removeNode(domNode, vNode) {
   return null;
 }
 
-function isMap(node) {
-  return node.tagName === 'MAP'
-}
-
-function isCircleMarker(node) {
-  return node.tagName === 'CIRCLEMARKER'
-}
-
-function isMarker(node) {
-  return node.tagName === 'MARKER'
-}
-
-function allowsChildren(parentNode) {
-  return isMap(parentNode) || isMarker(parentNode)
-}
-
 function insertNode(parentNode, vNode, renderOptions) {
-  var newNode = renderOptions.render(vNode, renderOptions);
-  if (parentNode) {
-    if(allowsChildren(parentNode)) {
-      const instance = newNode.instance
-      const parentInstance = parentNode.instance
-      const tagName = newNode.tagName
-
-      switch(tagName) {
-        case 'TILELAYER':
-        case 'CIRCLEMARKER':
-        case 'MARKER':
-          parentInstance.addLayer(instance)
-          break
-        case 'DIVICON':
-        case 'ICON':
-          console.log("Setting icon...")
-          parentInstance.setIcon(instance)
-          break
-        default:
-          throw new Error('Invalid tagName sent for insert: ' + tagName)
-      }
-
-      parentNode.appendChild(newNode);
-
-    } else {
-      throw new Error('Parent node does not allow insert.')
-    }
-  }
-
+  var newNode = renderOptions.render(vNode, renderOptions, parentNode);
   return parentNode;
 }
 

@@ -3,6 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.getTileLayer = getTileLayer;
 exports.createMapElement = createMapElement;
 exports.getMarkerIcon = getMarkerIcon;
 
@@ -20,11 +21,64 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 //import * as document from 'global/document'
 
-var templateUrlRE = new RegExp("https?://.*{}.*");
-//const tileJSONUrlRE = new RegExp("https?.*")
+var templateUrlRE = new RegExp("https?://.*{}.*"); /* */
 
-/* */
-function createMapElement(vnode, renderOpts) {
+function getTileLayer(tileStyle, options) {
+  if (templateUrlRE.test(tileStyle)) {
+    return _mapbox2.default.TileLayer(tileStyle, options);
+  } else {
+    // There are three types of tile styles for Mapbox (id, url, tileJSON)
+    // and they're all called the same way so no need to distinguish
+    return _mapbox2.default.mapbox.tileLayer(tileStyle, options);
+  }
+}
+
+function validMapChild(vNode) {
+  var tagName = vNode.tagName.toUpperCase();
+  return tagName === 'TILELAYER' || tagName === 'CIRCLEMARKER' || tagName === 'MARKER' || tagName === 'LAYERGROUP' || tagName === 'FEATUREGROUP';
+}
+
+function validLayerGroupChild(vNode) {
+  var tagName = vNode.tagName.toUpperCase();
+  return tagName === 'CIRCLEMARKER' || tagName === 'MARKER' || tagName === 'LAYERGROUP' || tagName === 'FEATUREGROUP';
+}
+
+function validLayerGroupParent(vNode) {
+  var tagName = vNode.tagName.toUpperCase();
+  return tagName === 'MAP' || tagName === 'LAYERGROUP' || tagName === 'FEATUREGROUP';
+}
+
+function validTileLayerParent(vNode) {
+  var tagName = vNode.tagName.toUpperCase();
+  return tagName === 'MAP';
+}
+
+function validFeatureGroupChild(vNode) {
+  var tagName = vNode.tagName.toUpperCase();
+  return tagName === 'CIRCLEMARKER' || tagName === 'MARKER' || tagName === 'LAYERGROUP' || tagName === 'FEATUREGROUP';
+}
+
+function validFeatureGroupParent(vNode) {
+  var tagName = vNode.tagName.toUpperCase();
+  return tagName === 'MAP' || tagName === 'LAYERGROUP' || tagName === 'FEATUREGROUP';
+}
+
+function validMarkerChild(vNode) {
+  var tagName = vNode.tagName.toUpperCase();
+  return tagName === 'DIVICON' || tagName === 'ICON';
+}
+
+function validMarkerParent(vNode) {
+  var tagName = vNode.tagName.toUpperCase();
+  return tagName === 'MAP' || tagName === 'LAYERGROUP' || tagName === 'FEATUREGROUP';
+}
+
+function validMarkerIconParent(vNode) {
+  var tagName = vNode.tagName.toUpperCase();
+  return tagName === 'MARKER';
+}
+
+function createMapElement(vnode, renderOpts, parent) {
 
   var doc = renderOpts ? renderOpts.document || document : document;
   var warn = renderOpts ? renderOpts.warn : null;
@@ -41,73 +95,149 @@ function createMapElement(vnode, renderOpts) {
   var node = document.createElement(tagName);
   var properties = vnode.properties;
   var options = properties.options || {};
-  var inst = undefined;
+  var inst = undefined,
+      latLng = undefined,
+      radius = undefined,
+      children = undefined,
+      child = undefined,
+      childTagName = undefined;
   switch (tagName) {
-    case "MAP":
-
-      //console.log(L)
-      if (!properties.anchorElement) {
-        throw new Error('anchorElement must be given as property when creating a new map.');
-      }
+    case 'MAP':
+      if (!properties.anchorElement) throw new Error('\'anchorElement\' must be given as property when creating a map.');
+      if (parent) throw new Error('map element must be the root, cannot have a parent.');
 
       node.instance = _mapbox2.default.mapbox.map(properties.anchorElement, null, options);
-      delete properties.anchorElement;
       (0, _applyProperties.applyProperties)(node, properties);
-      break;
-    case "TILELAYER":
+
+      children = vnode.children;
+      for (var i = 0; i < children.length; i++) {
+        child = children[i];
+        if (validMapChild(child)) {
+          var childNode = createMapElement(child, renderOpts, node);
+          if (childNode) {
+            node.appendChild(childNode);
+          }
+        } else {
+          throw new Error("Invalid child VNode for map: " + tagName);
+        }
+      }
+
+      return node;
+    case 'LAYERGROUP':
+      if (!validLayerGroupParent(parent)) throw new Error('Invalid layerGroup parent element');
+
+      inst = _mapbox2.default.layerGroup();
+      node.instance = inst;
+      parent.instance.addLayer(inst);
+      (0, _applyProperties.applyProperties)(node, properties);
+      children = vnode.children;
+      for (var i = 0; i < children.length; i++) {
+        child = children[i];
+        if (validLayerGroupChild(child)) {
+          var childNode = createMapElement(children[i], renderOpts, node);
+          if (childNode) {
+            node.appendChild(childNode);
+          }
+        } else {
+          throw new Error("Invalid child VNode for map: " + tagName);
+        }
+      }
+      return node;
+    case 'FEATUREGROUP':
+      if (!validFeatureGroupParent(parent)) throw new Error('Invalid featureGroup parent element');
+
+      inst = _mapbox2.default.featureGroup();
+      node.instance = inst;
+      parent.instance.addLayer(inst);
+      (0, _applyProperties.applyProperties)(node, properties);
+      children = vnode.children;
+      for (var i = 0; i < children.length; i++) {
+        child = children[i];
+        childTagName = child.tagName.toUpperCase();
+        if (validFeatureGroupChild(child)) {
+          var childNode = createMapElement(children[i], renderOpts);
+          if (childNode) {
+            node.appendChild(childNode);
+          }
+        } else {
+          throw new Error("Invalid child VNode for map: " + tagName);
+        }
+      }
+      return node;
+
+    case 'TILELAYER':
+      if (!validTileLayerParent(parent)) throw new Error('Invalid tileLayer parent element');
+
       var tileStyle = properties.tile;
-      if (templateUrlRE.test(tileStyle)) {
-        node.instance = _mapbox2.default.TileLayer(tileStyle, options);
-      } else {
-        // There are three types of tile styles for Mapbox (id, url, tileJSON)
-        // and they're all called the same way so no need to distinguish
-        node.instance = _mapbox2.default.mapbox.tileLayer(tileStyle, options);
-      }
+      if (!tileStyle) throw new Error('\'tile\' must be given as property when creating a tileLayer.');
+
+      inst = getTileLayer(tileStyle, options);
+
+      node.instance = inst;
+      parent.instance.addLayer(inst);
+
       (0, _applyProperties.applyProperties)(node, properties);
-      break;
+      return node;
     case "CIRCLEMARKER":
-      inst = _mapbox2.default.circleMarker(properties.latLng, options);
-      var rad = properties.radius;
-      if (rad) {
-        inst.setRadius(rad);
-      }
+      if (!validMarkerParent(parent)) throw new Error('Invalid circleMarker parent element');
+
+      latLng = properties.latLng;
+      if (!latLng) throw new Error('\'latLng\' must be given as property when creating a circleMarker.');
+
+      radius = properties.radius;
+      if (!radius) throw new Error('\'radius\' must be given as property when creating a circleMarker.');
+
+      inst = _mapbox2.default.circleMarker(latLng, options);
+      inst.setRadius(radius);
       node.instance = inst;
       (0, _applyProperties.applyProperties)(node, properties);
       return node;
     case "MARKER":
-      // const children = vnode.children
-      // let icon
-      // if(children && children.length) {
-      //   icon = getMarkerIcon(children[0])
-      // }
+      if (!validMarkerParent(parent)) throw new Error('Invalid marker parent element');
 
-      // Will default to L.Icon.Default() if undefined
-      //options.icon = new L.Icon.Default()
-      inst = _mapbox2.default.marker(properties.latLng, options);
+      latLng = properties.latLng;
+      if (!latLng) throw new Error('\'latLng\' must be given as property when creating a marker.');
 
-      node.instance = inst;
+      children = vnode.children;
+      // Will default to new L.Icon.Default() no icon children defined
+      if (children.length) {
+        child = children[0];
+        childTagName = child.tagName.toUpperCase();
+        if (validMarkerChild(child)) {
+          var _childNode = createMapElement(child, renderOpts); // consciously not sending parent here
+          node.appendChild(_childNode);
+          options.icon = _childNode.instance;
+        }
+      }
+
+      node.instance = _mapbox2.default.marker(latLng, options);
       (0, _applyProperties.applyProperties)(node, properties);
-      break;
+      return node;
     case "DIVICON":
     case "ICON":
-      console.log("Creating icon...");
-      node.instance = getMarkerIcon(vnode);
-      console.log(node.instance);
-      (0, _applyProperties.applyProperties)(node, properties);
+      if (parent) {
+        // If parent is sent then it means the marker is not requesting the icon
+        // directly, and that this element creation is being done via a patch
+        // directly on the icon element, meaning we want to keep the marker but
+        // change the icon
+        if (!validMarkerIconParent(parent)) throw new Error('Invalid icon parent element');
+
+        var parentInstance = parent.instance;
+        inst = getMarkerIcon(vnode);
+        node.instance = inst;
+        parentInstance.setIcon(inst);
+
+        (0, _applyProperties.applyProperties)(node, properties);
+      } else {
+        // The marker is directly asking for this, so no need to self-register
+        node.instance = getMarkerIcon(vnode);
+        (0, _applyProperties.applyProperties)(node, properties);
+      }
+
       return node;
     default:
       throw new Error("Unknown tag name: " + tagName);
   }
-
-  var children = vnode.children;
-  for (var i = 0; i < children.length; i++) {
-    var childNode = createMapElement(children[i], renderOpts);
-    if (childNode) {
-      node.appendChild(childNode);
-    }
-  }
-
-  return node;
 }
 
 /**
@@ -132,14 +262,14 @@ function getMarkerIcon(vNode) {
   var tagName = vNode.tagName.toUpperCase();
   var properties = vNode.properties;
   var options = properties ? properties.options : {};
-  console.log(tagName);
+
   switch (tagName) {
     case 'DIVICON':
-      console.log('creating divIcon');
       return _mapbox2.default.divIcon(options);
     case 'ICON':
       return _mapbox2.default.icon(options);
     default:
-      throw new Error("Invalid marker icon requested.");
+      break;
+    //return new L.Icon.Default()
   }
 }
