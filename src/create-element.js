@@ -80,8 +80,9 @@ export function createMapElement (vnode, renderOpts, parent) {
     return null;
   }
 
+  //console.log(vnode)
   const tagName = vnode.tagName.toUpperCase()
-
+  //console.log(vnode)
   var node = document.createElement(tagName)
   let properties = vnode.properties
   let options = properties.options || {}

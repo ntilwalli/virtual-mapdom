@@ -27,8 +27,7 @@ export function applyPatch(vpatch, domNode, renderOptions) {
       return domNode;
     case VPatch.PROPS:
       //console.log("Patch-op PROPS called.")
-      routePropertyChange(domNode, vNode, patch, renderOptions)
-      return domNode;
+      return routePropertyChange(domNode, vNode, patch, renderOptions)
     case VPatch.THUNK:
       throw new Error("Thunks not used in VMapDOM.")
     default:
@@ -36,7 +35,7 @@ export function applyPatch(vpatch, domNode, renderOptions) {
   }
 }
 
-function removeNode(domNode, vNode) {
+export function removeNode(domNode, vNode) {
   var parentNode = domNode.parentNode
 
   if (parentNode) {
@@ -49,6 +48,7 @@ function removeNode(domNode, vNode) {
       case 'MARKER':
       case 'LAYERGROUP':
       case 'FEATUREGROUP':
+        console.log('Removing layer...')
         parentInstance.removeLayer(instance)
         break;
       case 'DIVICON':

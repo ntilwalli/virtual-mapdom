@@ -275,14 +275,15 @@ test("patch tileLayer", assert => {
     new VNode('tileLayer', {tile: `blah`, attributes: {id: `someid`}}, [])
   ])
   const rootDom = render(vdom)
-  const dom = rootDom.children[0]
+  let dom = rootDom.children[0]
   assert.equal(dom.getAttribute(`tile`), `blah`, `should have expected tile value`)
   assert.equal(dom.id, `someid`, `should have expected element id `)
   const newvdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
     new VNode('tileLayer', {tile: `notblah`, attributes: {id: `someid`}}, [])
   ])
   const patches = diff(vdom, newvdom)
-  let newDom = patch(rootDom, patches, {render: render, patch: patchRecursive})
+  patch(rootDom, patches, {render: render, patch: patchRecursive})
+  dom = rootDom.children[0]
   assert.equal(dom.getAttribute(`tile`), `notblah`, `should have updated tile value`)
   assert.equal(dom.id, `someid`, `should have same element id`)
   assert.end()

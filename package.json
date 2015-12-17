@@ -31,6 +31,8 @@
   "devDependencies": {
     "babel-preset-es2015": "^6.3.13",
     "babelify": "^7.2.0",
+    "deep-assign": "^2.0.0",
+    "object-assign": "^4.0.1",
     "tap-dot": "^1.0.1",
     "tap-spec": "^4.1.1",
     "tape": "^4.2.2",

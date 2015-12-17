@@ -1,8 +1,11 @@
 /* */
 import isObject from 'is-object'
 import isArray from 'x-is-array'
+import deepAssign from 'deep-assign'
+import objectAssign from 'object-assign'
 import L from 'mapbox.js'
 import {getMarkerIcon, getTileLayer} from './create-element'
+import {removeNode} from './patch-op'
 
 function setLatLngAttribute(node, latLng) {
   const val = getLatLng(latLng)
@@ -147,85 +150,62 @@ function processFeatureGroupProperties(node, props, previous) {
   const previousStyle = previous ? previous.style || {} : {}
 
   if (style) {
-    for (let p in style) {
-      previousStyle[p] = style[p]
-    }
+    objectAssign(previousStyle, style)
+    // for (let p in style) {
+    //   previousStyle[p] = style[p]
+    // }
     featureGroup.setStyle(previousStyle)
     node.setAttribute('style', JSON.stringify(previousStyle))
   }
 }
 
+
+// Currently this replaces DOM nodes which could be replaced instead
+// but since this is a rare event and this code is easier to read
+// do it this way for now, can optimize later.
+function replaceNode(domNode, vNode, patch, renderOptions) {
+  const parentNode = domNode.parentNode
+  removeNode(domNode, vNode)
+  deepAssign(vNode.properties, patch)
+  return renderOptions.render(vNode, renderOptions, parentNode)
+}
+
 export function routePropertyChange (domNode, vNode, patch, renderOptions) {
   //console.log(`routePropertyChange called...`)
   const tagName = domNode.tagName
-  const vNodeProperties = vNode.properties || (vNode.properties = {})
-  const patchProperties = patch
-  const patchOptions = patchProperties.options
+  vNode.properties || (vNode.properties = {})
 
-  if (tagName === 'CIRCLEMARKER' || tagName === 'DIVICON' || tagName === 'ICON' || tagName === 'TILELAYER') {
-    const vNodeOptions = vNodeProperties.options || (vNodeProperties.options = {})
-    const parentNode = domNode.parentNode
-    const parentInstance = parentNode.instance;
-
+  if (tagName === `CIRCLEMARKER` || tagName === `DIVICON` ||
+      tagName === `ICON` || tagName === `TILELAYER` ||
+      tagName === `MARKER`) {
     if (tagName === `TILELAYER`) {
-
-        for (let p in patchOptions) {
-          vNodeOptions[p] = patchOptions[p]
+      return replaceNode(domNode, vNode, patch, renderOptions)
+    } else  {
+      if (patch.options) {
+        switch (tagName) {
+          case 'MARKER':
+          case 'CIRCLEMARKER':
+            return replaceNode(domNode, vNode, patch, renderOptions)
+          case 'DIVICON':
+          case 'ICON':
+            deepAssign(vNode.properties, patch)
+            const icon = getMarkerIcon(vNode)
+            const parentInstance = domNode.parentNode.instance;
+            parentInstance.setIcon(icon)
+            domNode.instance = icon
+            applyProperties(domNode, vNode.properties)
+            return domNode
+          default:
+            throw new Error("Invalid tagName sent: ", tagName)
         }
-
-        if (patchProperties.tile) {
-          vNodeProperties.tile = patchProperties.tile
-        }
-
-        parentInstance.removeLayer(domNode.instance)
-        const inst = getTileLayer(vNodeProperties.tile, vNodeOptions)
-        domNode.instance = inst
-        parentInstance.addLayer(inst)
-        applyProperties(domNode, vNodeProperties)
-
-    } else if (patchOptions) {
-      switch (tagName) {
-        case 'CIRCLEMARKER':
-          if (patchProperties.latLng) {
-            vNodeProperties.latLng = patchProperties.latLng
-          }
-
-          if (patchProperties.radius) {
-            vNodeProperties.radius = patchProperties.radius
-          }
-
-          if (patchOptions.hasOwnProperty('color')) vNodeOptions.color = patchOptions.color
-
-          const oldInstance = domNode.instance
-          parentInstance.removeLayer(oldInstance)
-          const newInstance = L.circleMarker(vNodeProperties.latLng, vNodeOptions)
-          parentInstance.addLayer(newInstance)
-          domNode.instance = newInstance
-
-          applyProperties(domNode, vNodeProperties);
-
-          break
-        case 'DIVICON':
-        case 'ICON':
-
-          for (let p in patchOptions) {
-            vNodeOptions[p] = patchOptions[p]
-          }
-
-          const icon = getMarkerIcon(vNode)
-          parentInstance.setIcon(icon)
-          domNode.instance = icon
-          applyProperties(domNode, vNodeProperties)
-          break
-
-        default:
-          throw new Error("Invalid tagName sent: ", tagName)
+      } else {
+        applyProperties(domNode, patch, vNode.properties)
+        return domNode
       }
-    } else {
-      applyProperties(domNode, patchProperties, vNodeProperties)
     }
   } else {
-    applyProperties(domNode, patchProperties, vNodeProperties)
+    applyProperties(domNode, patch, vNode.properties)
+    return domNode
   }
 }
 
