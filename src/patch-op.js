@@ -67,6 +67,7 @@ function removeNode(domNode, vNode) {
 
 function insertNode(parentNode, vNode, renderOptions) {
   var newNode = renderOptions.render(vNode, renderOptions, parentNode);
+  parentNode.appendChild(newNode);
   return parentNode;
 }
 

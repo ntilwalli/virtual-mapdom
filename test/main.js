@@ -252,10 +252,14 @@ test("patch map", assert => {
   const vdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}, attributes: {id: `someid`}}, [], `test`)
   const dom = render(vdom)
   assert.deepEqual(jsonAttribute(dom, `centerZoom`), {zoom: 7, center: [4, 5]}, `should have expected centerZoom value`)
-  const newvdom = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 8, center: [6, 5]}, attributes: {id: `someid`}}, [], `test`)
+  const newvdom = new VNode(`map`, {anchorElement: element1, centerZoom: {zoom: 8, center: [6, 5]}, attributes: {id: `someid`}}, [
+    new VNode(`tileLayer`, {tile: `blah`, attributes: {id: `someid2`}})
+  ], `test`)
   const patches = diff(vdom, newvdom)
   let newDom = patch(dom, patches, {render: render, patch: patchRecursive})
   assert.deepEqual(jsonAttribute(dom, `centerZoom`), {zoom: 8, center: [6, 5]}, `should have updated centerZoom value`)
+  assert.equal(dom, newDom, `should return same root dom element reference`)
+  assert.equal(dom.children.length, 1, `should have one child`)
   assert.end()
 })
 
