@@ -20,10 +20,6 @@ var _deepAssign = require('deep-assign');
 
 var _deepAssign2 = _interopRequireDefault(_deepAssign);
 
-var _objectAssign = require('object-assign');
-
-var _objectAssign2 = _interopRequireDefault(_objectAssign);
-
 var _mapbox = require('mapbox.js');
 
 var _mapbox2 = _interopRequireDefault(_mapbox);
@@ -195,7 +191,7 @@ function processFeatureGroupProperties(node, props, previous) {
   var previousStyle = previous ? previous.style || {} : {};
 
   if (style) {
-    (0, _objectAssign2.default)(previousStyle, style);
+    (0, _deepAssign2.default)(previousStyle, style);
     // for (let p in style) {
     //   previousStyle[p] = style[p]
     // }
