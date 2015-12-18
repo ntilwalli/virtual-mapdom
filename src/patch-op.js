@@ -24,6 +24,7 @@ export function applyPatch(vpatch, domNode, renderOptions) {
       return vNodePatch(domNode, vNode, patch, renderOptions);
     case VPatch.ORDER:
       // Don't do anything special with re-ordering...
+      reorderChildren(domNode, patch)
       return domNode;
     case VPatch.PROPS:
       //console.log("Patch-op PROPS called.")
@@ -35,30 +36,50 @@ export function applyPatch(vpatch, domNode, renderOptions) {
   }
 }
 
+function removeFromParentInstance(tagName, parentInstance, instance) {
+  switch(tagName) {
+    case 'TILELAYER':
+    case 'CIRCLEMARKER':
+    case 'MARKER':
+    case 'LAYERGROUP':
+    case 'FEATUREGROUP':
+      parentInstance.removeLayer(instance)
+      break;
+    case 'DIVICON':
+    case 'ICON':
+      parentInstance.setIcon(new L.Icon.Default())
+      break
+    default:
+      throw new Error('Invalid tagName sent for removal: ' + tagName)
+  }
+}
+
+function insertIntoParentInstance(tagName, parentInstance, instance) {
+  switch(tagName) {
+    case 'TILELAYER':
+    case 'CIRCLEMARKER':
+    case 'MARKER':
+    case 'LAYERGROUP':
+    case 'FEATUREGROUP':
+      parentInstance.addLayer(instance)
+      break;
+    case 'DIVICON':
+    case 'ICON':
+      parentInstance.setIcon(instance)
+      break
+    default:
+      throw new Error('Invalid tagName sent for insertion: ' + tagName)
+  }
+}
+
 export function removeNode(domNode, vNode) {
-  var parentNode = domNode.parentNode
+  const parentNode = domNode.parentNode
 
   if (parentNode) {
-    var instance = domNode.instance
-    var parentInstance = parentNode.instance
-    var tagName = domNode.tagName
-    switch(tagName) {
-      case 'TILELAYER':
-      case 'CIRCLEMARKER':
-      case 'MARKER':
-      case 'LAYERGROUP':
-      case 'FEATUREGROUP':
-        console.log('Removing layer...')
-        parentInstance.removeLayer(instance)
-        break;
-      case 'DIVICON':
-      case 'ICON':
-        parentInstance.setIcon(new L.Icon.Default())
-        break
-      default:
-        throw new Error('Invalid tagName sent for removal: ' + tagName)
-    }
-
+    const instance = domNode.instance
+    const parentInstance = parentNode.instance
+    const tagName = domNode.tagName
+    removeFromParentInstance(tagName, parentInstance, instance)
     parentNode.removeChild(domNode);
   }
 
@@ -66,24 +87,49 @@ export function removeNode(domNode, vNode) {
 }
 
 function insertNode(parentNode, vNode, renderOptions) {
-  let newNode = renderOptions.render(vNode, renderOptions, parentNode);
+  //if(parentNode && parentNode.tagName === 'MARKER')
+  renderOptions.render(vNode, renderOptions, parentNode);
   //parentNode.appendChild(newNode);
   return parentNode;
 }
 
-function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
+export function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
     // console.log(domNode)
     // console.log(leftVNode)
     // console.log(vNode)
-    let parentNode = domNode.parentNode
-    removeNode(domNode, leftVNode)
-    let newNode = renderOptions.render(vNode, renderOptions, parentNode)
+    const parentNode = domNode.parentNode
+    const parentInstance = parentNode.instance
+    const newNode = renderOptions.render(vNode, renderOptions)
 
-    // if (parentNode && newNode !== domNode) {
-    //     parentNode.replaceChild(newNode, domNode)
-    // }
-
+    removeFromParentInstance(domNode.tagName, parentInstance, domNode.instance)
+    insertIntoParentInstance(newNode.tagName, parentInstance, newNode.instance)
+    parentNode.replaceChild(newNode, domNode)
     return newNode
+}
+
+function reorderChildren(domNode, moves) {
+    var childNodes = domNode.childNodes
+    var keyMap = {}
+    var node
+    var remove
+    var insert
+
+    for (var i = 0; i < moves.removes.length; i++) {
+        remove = moves.removes[i]
+        node = childNodes[remove.from]
+        if (remove.key) {
+            keyMap[remove.key] = node
+        }
+        domNode.removeChild(node)
+    }
+
+    var length = childNodes.length
+    for (var j = 0; j < moves.inserts.length; j++) {
+        insert = moves.inserts[j]
+        node = keyMap[insert.key]
+        // this is the weirdest bug i've ever seen in webkit
+        domNode.insertBefore(node, insert.to >= length++ ? null : childNodes[insert.to])
+    }
 }
 
 // function vNodePatch (domNode, vNode, patch, renderOptions) {

@@ -137,7 +137,7 @@ test("render divIcon", assert => {
         new VNode('divIcon', {options})
       ])
     ])
-  assert.throws(() => render(invalid), `should throw when missing parent is not marker`)
+  assert.throws(() => render(invalid), `should throw when parent is sent and is not marker`)
   element1 = document.createElement('div')
   let valid =
     new VNode(`map`, {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
@@ -185,7 +185,7 @@ test("render icon", assert => {
         new VNode('icon', {options})
       ])
     ])
-  assert.throws(() => render(invalid), `should throw when missing parent is not marker`)
+  assert.throws(() => render(invalid), `should throw when parent is sent and is not marker`)
   element1 = document.createElement('div')
   let valid =
     new VNode(`map`, {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
@@ -214,7 +214,6 @@ test("render icon", assert => {
 })
 
 test("render layerGroup", assert => {
-  assert.throws(() => render(new VNode(`layerGroup`), {}), `should throw when missing parent element`)
   let element1 = document.createElement('div')
   const valid = new VNode(`map`, {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
       new VNode(`layerGroup`, {attributes: {id: `someid`}})
@@ -231,7 +230,6 @@ test("render layerGroup", assert => {
 })
 
 test("render featureGroup", assert => {
-  assert.throws(() => render(new VNode(`featureGroup`), {}), `should throw when missing parent element`)
   let element1 = document.createElement('div')
   const valid = new VNode(`map`, {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
       new VNode(`featureGroup`, {attributes: {id: `someid`}})

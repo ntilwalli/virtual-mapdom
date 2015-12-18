@@ -4,7 +4,8 @@ import isArray from 'x-is-array'
 import deepAssign from 'deep-assign'
 import L from 'mapbox.js'
 import {getMarkerIcon, getTileLayer} from './create-element'
-import {removeNode} from './patch-op'
+import {removeNode, vNodePatch} from './patch-op'
+import {VNode} from 'virtual-dom'
 
 function setLatLngAttribute(node, latLng) {
   const val = getLatLng(latLng)
@@ -158,17 +159,6 @@ function processFeatureGroupProperties(node, props, previous) {
   }
 }
 
-
-// Currently this replaces DOM nodes which could be replaced instead
-// but since this is a rare event and this code is easier to read
-// do it this way for now, can optimize later.
-function replaceNode(domNode, vNode, patch, renderOptions) {
-  const parentNode = domNode.parentNode
-  removeNode(domNode, vNode)
-  deepAssign(vNode.properties, patch)
-  return renderOptions.render(vNode, renderOptions, parentNode)
-}
-
 export function routePropertyChange (domNode, vNode, patch, renderOptions) {
   //console.log(`routePropertyChange called...`)
   const tagName = domNode.tagName
@@ -178,13 +168,25 @@ export function routePropertyChange (domNode, vNode, patch, renderOptions) {
       tagName === `ICON` || tagName === `TILELAYER` ||
       tagName === `MARKER`) {
     if (tagName === `TILELAYER`) {
-      return replaceNode(domNode, vNode, patch, renderOptions)
+      //const newVNode = new VNode('tileLayer', JSON.parse(JSON.stringify(vNode.properties)))
+      //deepAssign(newVNode.properties, patch)
+      //return vNodePatch(domNode, vNode, newVNode, renderOptions)
+      deepAssign(vNode.properties, patch)
+      return vNodePatch(domNode, vNode, vNode, renderOptions)
     } else  {
       if (patch.options) {
+        let newVNode
         switch (tagName) {
           case 'MARKER':
+            newVNode = new VNode('marker', JSON.parse(JSON.stringify(vNode.properties)))
+            deepAssign(newVNode, patch)
+            return vNodePatch(domNode, vNode, newVNode, renderOptions)
           case 'CIRCLEMARKER':
-            return replaceNode(domNode, vNode, patch, renderOptions)
+            //newVNode = new VNode('circleMarker', JSON.parse(JSON.stringify(vNode.properties)))
+            //deepAssign(newVNode, patch)
+            //return vNodePatch(domNode, vNode, newVNode, renderOptions)
+            deepAssign(vNode.properties, patch)
+            return vNodePatch(domNode, vNode, vNode, renderOptions)
           case 'DIVICON':
           case 'ICON':
             deepAssign(vNode.properties, patch)

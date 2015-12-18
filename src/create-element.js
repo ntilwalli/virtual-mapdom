@@ -71,18 +71,18 @@ function validMarkerIconParent (vNode) {
 export function createMapElement (vnode, renderOpts, parent) {
 
   const doc = renderOpts ? renderOpts.document || document : document;
+
   const warn = renderOpts ? renderOpts.warn : null;
 
   if (!isVNode(vnode)) {
     if (warn) {
       warn("Item is not a valid virtual dom node", vnode);
     }
+
     return null;
   }
 
-  //console.log(vnode)
   const tagName = vnode.tagName.toUpperCase()
-  //console.log(vnode)
   var node = document.createElement(tagName)
   let properties = vnode.properties
   let options = properties.options || {}
@@ -110,11 +110,9 @@ export function createMapElement (vnode, renderOpts, parent) {
 
       return node;
     case 'LAYERGROUP':
-      if(!validLayerGroupParent(parent)) throw new Error(`Invalid layerGroup parent element`)
-
       inst = L.layerGroup()
       node.instance = inst
-      parent.instance.addLayer(inst)
+
       applyProperties(node, properties);
       children = vnode.children;
       for (var i = 0; i < children.length; i++) {
@@ -128,14 +126,20 @@ export function createMapElement (vnode, renderOpts, parent) {
           throw new Error("Invalid child VNode for map: " + tagName)
         }
       }
-      parent.appendChild(node);
+
+      if (parent) {
+        if(!validLayerGroupParent(parent)) throw new Error(`Invalid layerGroup parent element`)
+
+        parent.instance.addLayer(inst)
+        parent.appendChild(node);
+      }
+
       return node
     case 'FEATUREGROUP':
-      if(!validFeatureGroupParent(parent)) throw new Error(`Invalid featureGroup parent element`)
 
       inst = L.featureGroup()
       node.instance = inst
-      parent.instance.addLayer(inst)
+
       applyProperties(node, properties);
       children = vnode.children;
       for (var i = 0; i < children.length; i++) {
@@ -150,25 +154,34 @@ export function createMapElement (vnode, renderOpts, parent) {
           throw new Error("Invalid child VNode for map: " + tagName)
         }
       }
-      parent.appendChild(node);
+
+      if (parent) {
+        if(!validFeatureGroupParent(parent)) throw new Error(`Invalid featureGroup parent element`)
+
+        parent.instance.addLayer(inst)
+        parent.appendChild(node);
+      }
+
       return node
 
     case 'TILELAYER':
-      if(!validTileLayerParent(parent)) throw new Error(`Invalid tileLayer parent element`)
-
       const tileStyle = properties.tile
       if (!tileStyle) throw new Error(`'tile' must be given as property when creating a tileLayer.`)
 
       inst = getTileLayer(tileStyle, options)
 
       node.instance = inst
-      parent.instance.addLayer(inst)
       applyProperties(node, properties);
-      parent.appendChild(node);
+
+      if (parent) {
+        if (!validTileLayerParent(parent)) throw new Error(`Invalid tileLayer parent element`)
+
+        parent.instance.addLayer(inst)
+        parent.appendChild(node);
+      }
+
       return node
     case "CIRCLEMARKER":
-      if(!validMarkerParent(parent)) throw new Error(`Invalid circleMarker parent element`)
-
       latLng = properties.latLng
       if (!latLng) throw new Error(`'latLng' must be given as property when creating a circleMarker.`)
 
@@ -178,12 +191,17 @@ export function createMapElement (vnode, renderOpts, parent) {
       inst = L.circleMarker(latLng, options)
       inst.setRadius(radius)
       node.instance = inst
-      parent.instance.addLayer(inst)
       applyProperties(node, properties);
-      parent.appendChild(node);
+
+      if (parent) {
+        if(!validMarkerParent(parent)) throw new Error(`Invalid circleMarker parent element`)
+
+        parent.instance.addLayer(inst)
+        parent.appendChild(node);
+      }
+
       return node
     case "MARKER":
-      if(!validMarkerParent(parent)) throw new Error(`Invalid marker parent element`)
 
       latLng = properties.latLng
       if (!latLng) throw new Error(`'latLng' must be given as property when creating a marker.`)
@@ -202,34 +220,28 @@ export function createMapElement (vnode, renderOpts, parent) {
 
       inst = L.marker(latLng, options)
       node.instance = inst
-      parent.instance.addLayer(inst)
       applyProperties(node, properties);
-      parent.appendChild(node);
+
+      if (parent) {
+        if(!validMarkerParent(parent)) throw new Error(`Invalid marker parent element`)
+
+        parent.instance.addLayer(inst)
+        parent.appendChild(node);
+      }
+
       return node
     case "DIVICON":
     case "ICON":
+
+      inst = getMarkerIcon(vnode)
+      node.instance = inst
+      applyProperties(node, properties)
+
       if (parent) {
-        // If parent is sent then it means the icon element is being patched directly
-        // which implies we want to keep the existing marker (which is not being)
-        // patched and just swap out the icon.  When no parent is sent, that
-        // means a marker is asking for this element during it's own creation
-        // above and will manage the registration and appending the element
-        // as a child.
         if(!validMarkerIconParent(parent)) throw new Error(`Invalid icon parent element`)
-
-        const parentInstance = parent.instance
-        inst = getMarkerIcon(vnode)
-        node.instance = inst
-        parentInstance.setIcon(inst)
-
-        applyProperties(node, properties)
+        parent.instance.setIcon(inst)
         parent.appendChild(node);
-      } else {
-        // The marker creation code is asking for this so no need to self-register
-        node.instance = getMarkerIcon(vnode)
-        applyProperties(node, properties)
       }
-
 
       return node
     default:
