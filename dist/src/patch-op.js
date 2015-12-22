@@ -5,6 +5,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.applyPatch = applyPatch;
 exports.removeNode = removeNode;
+exports.vNodePatch = vNodePatch;
 
 var _applyProperties = require('./apply-properties');
 
@@ -37,6 +38,7 @@ function applyPatch(vpatch, domNode, renderOptions) {
       return vNodePatch(domNode, vNode, patch, renderOptions);
     case _vpatch2.default.ORDER:
       // Don't do anything special with re-ordering...
+      reorderChildren(domNode, patch);
       return domNode;
     case _vpatch2.default.PROPS:
       //console.log("Patch-op PROPS called.")
@@ -48,6 +50,42 @@ function applyPatch(vpatch, domNode, renderOptions) {
   }
 }
 
+function removeFromParentInstance(tagName, parentInstance, instance) {
+  switch (tagName) {
+    case 'TILELAYER':
+    case 'CIRCLEMARKER':
+    case 'MARKER':
+    case 'LAYERGROUP':
+    case 'FEATUREGROUP':
+      parentInstance.removeLayer(instance);
+      break;
+    case 'DIVICON':
+    case 'ICON':
+      parentInstance.setIcon(new L.Icon.Default());
+      break;
+    default:
+      throw new Error('Invalid tagName sent for removal: ' + tagName);
+  }
+}
+
+function insertIntoParentInstance(tagName, parentInstance, instance) {
+  switch (tagName) {
+    case 'TILELAYER':
+    case 'CIRCLEMARKER':
+    case 'MARKER':
+    case 'LAYERGROUP':
+    case 'FEATUREGROUP':
+      parentInstance.addLayer(instance);
+      break;
+    case 'DIVICON':
+    case 'ICON':
+      parentInstance.setIcon(instance);
+      break;
+    default:
+      throw new Error('Invalid tagName sent for insertion: ' + tagName);
+  }
+}
+
 function removeNode(domNode, vNode) {
   var parentNode = domNode.parentNode;
 
@@ -55,23 +93,7 @@ function removeNode(domNode, vNode) {
     var instance = domNode.instance;
     var parentInstance = parentNode.instance;
     var tagName = domNode.tagName;
-    switch (tagName) {
-      case 'TILELAYER':
-      case 'CIRCLEMARKER':
-      case 'MARKER':
-      case 'LAYERGROUP':
-      case 'FEATUREGROUP':
-        console.log('Removing layer...');
-        parentInstance.removeLayer(instance);
-        break;
-      case 'DIVICON':
-      case 'ICON':
-        parentInstance.setIcon(new L.Icon.Default());
-        break;
-      default:
-        throw new Error('Invalid tagName sent for removal: ' + tagName);
-    }
-
+    removeFromParentInstance(tagName, parentInstance, instance);
     parentNode.removeChild(domNode);
   }
 
@@ -79,7 +101,8 @@ function removeNode(domNode, vNode) {
 }
 
 function insertNode(parentNode, vNode, renderOptions) {
-  var newNode = renderOptions.render(vNode, renderOptions, parentNode);
+  //if(parentNode && parentNode.tagName === 'MARKER')
+  renderOptions.render(vNode, renderOptions, parentNode);
   //parentNode.appendChild(newNode);
   return parentNode;
 }
@@ -89,14 +112,38 @@ function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
   // console.log(leftVNode)
   // console.log(vNode)
   var parentNode = domNode.parentNode;
-  removeNode(domNode, leftVNode);
-  var newNode = renderOptions.render(vNode, renderOptions, parentNode);
+  var parentInstance = parentNode.instance;
+  var newNode = renderOptions.render(vNode, renderOptions);
 
-  // if (parentNode && newNode !== domNode) {
-  //     parentNode.replaceChild(newNode, domNode)
-  // }
-
+  removeFromParentInstance(domNode.tagName, parentInstance, domNode.instance);
+  insertIntoParentInstance(newNode.tagName, parentInstance, newNode.instance);
+  parentNode.replaceChild(newNode, domNode);
   return newNode;
+}
+
+function reorderChildren(domNode, moves) {
+  var childNodes = domNode.childNodes;
+  var keyMap = {};
+  var node;
+  var remove;
+  var insert;
+
+  for (var i = 0; i < moves.removes.length; i++) {
+    remove = moves.removes[i];
+    node = childNodes[remove.from];
+    if (remove.key) {
+      keyMap[remove.key] = node;
+    }
+    domNode.removeChild(node);
+  }
+
+  var length = childNodes.length;
+  for (var j = 0; j < moves.inserts.length; j++) {
+    insert = moves.inserts[j];
+    node = keyMap[insert.key];
+    // this is the weirdest bug i've ever seen in webkit
+    domNode.insertBefore(node, insert.to >= length++ ? null : childNodes[insert.to]);
+  }
 }
 
 // function vNodePatch (domNode, vNode, patch, renderOptions) {

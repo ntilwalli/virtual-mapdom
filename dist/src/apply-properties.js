@@ -28,6 +28,8 @@ var _createElement = require('./create-element');
 
 var _patchOp = require('./patch-op');
 
+var _virtualDom = require('virtual-dom');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function setLatLngAttribute(node, latLng) {
@@ -200,16 +202,6 @@ function processFeatureGroupProperties(node, props, previous) {
   }
 }
 
-// Currently this replaces DOM nodes which could be replaced instead
-// but since this is a rare event and this code is easier to read
-// do it this way for now, can optimize later.
-function replaceNode(domNode, vNode, patch, renderOptions) {
-  var parentNode = domNode.parentNode;
-  (0, _patchOp.removeNode)(domNode, vNode);
-  (0, _deepAssign2.default)(vNode.properties, patch);
-  return renderOptions.render(vNode, renderOptions, parentNode);
-}
-
 function routePropertyChange(domNode, vNode, patch, renderOptions) {
   //console.log(`routePropertyChange called...`)
   var tagName = domNode.tagName;
@@ -217,13 +209,25 @@ function routePropertyChange(domNode, vNode, patch, renderOptions) {
 
   if (tagName === 'CIRCLEMARKER' || tagName === 'DIVICON' || tagName === 'ICON' || tagName === 'TILELAYER' || tagName === 'MARKER') {
     if (tagName === 'TILELAYER') {
-      return replaceNode(domNode, vNode, patch, renderOptions);
+      //const newVNode = new VNode('tileLayer', JSON.parse(JSON.stringify(vNode.properties)))
+      //deepAssign(newVNode.properties, patch)
+      //return vNodePatch(domNode, vNode, newVNode, renderOptions)
+      (0, _deepAssign2.default)(vNode.properties, patch);
+      return (0, _patchOp.vNodePatch)(domNode, vNode, vNode, renderOptions);
     } else {
       if (patch.options) {
+        var newVNode = undefined;
         switch (tagName) {
           case 'MARKER':
+            newVNode = new _virtualDom.VNode('marker', JSON.parse(JSON.stringify(vNode.properties)));
+            (0, _deepAssign2.default)(newVNode, patch);
+            return (0, _patchOp.vNodePatch)(domNode, vNode, newVNode, renderOptions);
           case 'CIRCLEMARKER':
-            return replaceNode(domNode, vNode, patch, renderOptions);
+            //newVNode = new VNode('circleMarker', JSON.parse(JSON.stringify(vNode.properties)))
+            //deepAssign(newVNode, patch)
+            //return vNodePatch(domNode, vNode, newVNode, renderOptions)
+            (0, _deepAssign2.default)(vNode.properties, patch);
+            return (0, _patchOp.vNodePatch)(domNode, vNode, vNode, renderOptions);
           case 'DIVICON':
           case 'ICON':
             (0, _deepAssign2.default)(vNode.properties, patch);

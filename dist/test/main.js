@@ -154,7 +154,7 @@ function jsonAttribute(node, name) {
   var invalid = new _virtualDom.VNode('map', { anchorElement: element1, centerZoom: { zoom: 7, center: [4, 5] } }, [new _virtualDom.VNode('layerGroup', {}, [new _virtualDom.VNode('divIcon', { options: options })])]);
   assert.throws(function () {
     return (0, _index.render)(invalid);
-  }, 'should throw when missing parent is not marker');
+  }, 'should throw when parent is sent and is not marker');
   element1 = document.createElement('div');
   var valid = new _virtualDom.VNode('map', { anchorElement: element1, centerZoom: { zoom: 7, center: [4, 5] } }, [new _virtualDom.VNode('marker', { latLng: [4, 5] }, [new _virtualDom.VNode('divIcon', { options: options })])]);
   var rootDom = (0, _index.render)(valid);
@@ -194,7 +194,7 @@ function jsonAttribute(node, name) {
   var invalid = new _virtualDom.VNode('map', { anchorElement: element1, centerZoom: { zoom: 7, center: [4, 5] } }, [new _virtualDom.VNode('layerGroup', {}, [new _virtualDom.VNode('icon', { options: options })])]);
   assert.throws(function () {
     return (0, _index.render)(invalid);
-  }, 'should throw when missing parent is not marker');
+  }, 'should throw when parent is sent and is not marker');
   element1 = document.createElement('div');
   var valid = new _virtualDom.VNode('map', { anchorElement: element1, centerZoom: { zoom: 7, center: [4, 5] } }, [new _virtualDom.VNode('marker', { latLng: [4, 5] }, [new _virtualDom.VNode('icon', { options: options })])]);
   var rootDom = (0, _index.render)(valid);
@@ -218,9 +218,6 @@ function jsonAttribute(node, name) {
 });
 
 (0, _tapeCatch2.default)("render layerGroup", function (assert) {
-  assert.throws(function () {
-    return (0, _index.render)(new _virtualDom.VNode('layerGroup'), {});
-  }, 'should throw when missing parent element');
   var element1 = document.createElement('div');
   var valid = new _virtualDom.VNode('map', { anchorElement: element1, centerZoom: { zoom: 7, center: [4, 5] } }, [new _virtualDom.VNode('layerGroup', { attributes: { id: 'someid' } })]);
   var rootDom = (0, _index.render)(valid);
@@ -235,9 +232,6 @@ function jsonAttribute(node, name) {
 });
 
 (0, _tapeCatch2.default)("render featureGroup", function (assert) {
-  assert.throws(function () {
-    return (0, _index.render)(new _virtualDom.VNode('featureGroup'), {});
-  }, 'should throw when missing parent element');
   var element1 = document.createElement('div');
   var valid = new _virtualDom.VNode('map', { anchorElement: element1, centerZoom: { zoom: 7, center: [4, 5] } }, [new _virtualDom.VNode('featureGroup', { attributes: { id: 'someid' } })]);
   var rootDom = (0, _index.render)(valid);

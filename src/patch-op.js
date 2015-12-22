@@ -94,9 +94,6 @@ function insertNode(parentNode, vNode, renderOptions) {
 }
 
 export function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
-    // console.log(domNode)
-    // console.log(leftVNode)
-    // console.log(vNode)
     const parentNode = domNode.parentNode
     const parentInstance = parentNode.instance
     const newNode = renderOptions.render(vNode, renderOptions)
