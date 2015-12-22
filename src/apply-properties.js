@@ -44,8 +44,8 @@ function processAttributes(node, props, previous) {
 }
 
 function getLatLng(patch, previous) {
-  const lat = patch[0] || patch.lat || previous[0] || previous.lat
-  const lng = patch[1] || patch.lng || previous[1] || previous.lng
+  var lat = (patch && (patch[0] || patch.lat)) || (previous && (previous[0] || previous.lat));
+  var lng = (patch && (patch[1] || patch.lng)) || (previous && (previous[1] || previous.lng));
   return [lat, lng]
 }
 
