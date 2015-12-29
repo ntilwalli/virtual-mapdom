@@ -111,6 +111,14 @@ function processCircleMarkerProperties(node, props, previous) {
     node.instance.mapdomInfo = props.info
     node.setAttribute('mapdomInfo', JSON.stringify(props.info))
   }
+
+  if (props.hasOwnProperty(`bringToFront`)) {
+    // CircleMarker or containing parent may not be attached
+    // to map yet, so defer bringing to front until next
+    // event loop turn.  (SVG elements z-index ordering is based
+    // on dom ordering...)
+    setTimeout(function () {node.instance.bringToFront()}, 4)
+  }
 }
 
 function processMarkerProperties(node, props, previous) {
