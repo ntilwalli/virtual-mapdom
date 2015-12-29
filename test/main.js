@@ -14,9 +14,10 @@ test("render map", assert => {
     new VNode(`divIcon`)
   ])), `should throw when given unsupported child element VNode`)
   const element2 = document.createElement('div')
-  const vdom = new VNode('map', {anchorElement: element2, centerZoom: {zoom: 7, center: [4, 5]}, attributes: {id: `someid`}})
+  const vdom = new VNode('map', {anchorElement: element2, centerZoom: {zoom: 7, center: [4, 5]}, attributes: {class: `randCN`, id: `someid`}})
   const dom = render(vdom)
   assert.equal(dom instanceof Element, true, `should be instance of Element`)
+  assert.equal(dom.className, `randCN`, `should have expected className`)
   assert.equal(dom.tagName, "MAP", "should have tagName 'MAP'")
   assert.ok(dom.getAttribute('centerZoom'), "should have centerZoom attribute")
   assert.deepEqual(jsonAttribute(dom, 'centerZoom'), {zoom: 7, center: [4, 5]}, "should have expected value")
@@ -83,7 +84,7 @@ test("render circleMarker", assert => {
   assert.throws(() => render(invalid), `should throw when missing 'radius' property`)
   element1 = document.createElement('div')
   const valid = new VNode('map', {anchorElement: element1, centerZoom: {zoom: 7, center: [4, 5]}}, [
-      new VNode('circleMarker', {latLng: [4, 5], radius: 3, attributes: {id: `someid`}})
+      new VNode('circleMarker', {info: {blah: 'thing'}, latLng: [4, 5], radius: 3, attributes: {id: `someid`}})
     ])
   const rootDom = render(valid)
   assert.ok(rootDom.children, "should have children")
@@ -97,6 +98,7 @@ test("render circleMarker", assert => {
   assert.deepEqual(jsonAttribute(dom, `radius`), 3, "should have expected radius value")
   assert.ok(dom.instance, `should have 'instance' property`)
   assert.equal(dom.instance instanceof L.CircleMarker, true, "should be an L.CircleMarker")
+  assert.deepEqual(dom.instance.mapdomInfo , {blah: 'thing'}, "should have instance with mapdomInfo property")
   assert.end()
 })
 

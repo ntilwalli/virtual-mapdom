@@ -80,8 +80,8 @@ function processAttributes(node, props, previous) {
 }
 
 function getLatLng(patch, previous) {
-  var lat = patch[0] || patch.lat || previous[0] || previous.lat;
-  var lng = patch[1] || patch.lng || previous[1] || previous.lng;
+  var lat = patch && (patch[0] || patch.lat) || previous && (previous[0] || previous.lat);
+  var lng = patch && (patch[1] || patch.lng) || previous && (previous[1] || previous.lng);
   return [lat, lng];
 }
 
@@ -148,6 +148,11 @@ function processCircleMarkerProperties(node, props, previous) {
 
   if (props.options) {
     node.setAttribute('options', JSON.stringify(props.options));
+  }
+
+  if (props.info) {
+    node.instance.mapdomInfo = props.info;
+    node.setAttribute('mapdomInfo', JSON.stringify(props.info));
   }
 }
 

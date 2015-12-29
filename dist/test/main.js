@@ -27,9 +27,10 @@ function jsonAttribute(node, name) {
     return (0, _index.render)(new _virtualDom.VNode('map', { anchorElement: element1 }, [new _virtualDom.VNode('divIcon')]));
   }, 'should throw when given unsupported child element VNode');
   var element2 = document.createElement('div');
-  var vdom = new _virtualDom.VNode('map', { anchorElement: element2, centerZoom: { zoom: 7, center: [4, 5] }, attributes: { id: 'someid' } });
+  var vdom = new _virtualDom.VNode('map', { anchorElement: element2, centerZoom: { zoom: 7, center: [4, 5] }, attributes: { class: 'randCN', id: 'someid' } });
   var dom = (0, _index.render)(vdom);
   assert.equal(dom instanceof Element, true, 'should be instance of Element');
+  assert.equal(dom.className, 'randCN', 'should have expected className');
   assert.equal(dom.tagName, "MAP", "should have tagName 'MAP'");
   assert.ok(dom.getAttribute('centerZoom'), "should have centerZoom attribute");
   assert.deepEqual(jsonAttribute(dom, 'centerZoom'), { zoom: 7, center: [4, 5] }, "should have expected value");
@@ -104,7 +105,7 @@ function jsonAttribute(node, name) {
     return (0, _index.render)(invalid);
   }, 'should throw when missing \'radius\' property');
   element1 = document.createElement('div');
-  var valid = new _virtualDom.VNode('map', { anchorElement: element1, centerZoom: { zoom: 7, center: [4, 5] } }, [new _virtualDom.VNode('circleMarker', { latLng: [4, 5], radius: 3, attributes: { id: 'someid' } })]);
+  var valid = new _virtualDom.VNode('map', { anchorElement: element1, centerZoom: { zoom: 7, center: [4, 5] } }, [new _virtualDom.VNode('circleMarker', { info: { blah: 'thing' }, latLng: [4, 5], radius: 3, attributes: { id: 'someid' } })]);
   var rootDom = (0, _index.render)(valid);
   assert.ok(rootDom.children, "should have children");
   assert.equal(rootDom.children.length, 1, "should have one child");
@@ -117,6 +118,7 @@ function jsonAttribute(node, name) {
   assert.deepEqual(jsonAttribute(dom, 'radius'), 3, "should have expected radius value");
   assert.ok(dom.instance, 'should have \'instance\' property');
   assert.equal(dom.instance instanceof _mapbox2.default.CircleMarker, true, "should be an L.CircleMarker");
+  assert.deepEqual(dom.instance.mapdomInfo, { blah: 'thing' }, "should have instance with mapdomInfo property");
   assert.end();
 });
 

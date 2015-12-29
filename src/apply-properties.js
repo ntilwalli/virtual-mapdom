@@ -106,6 +106,11 @@ function processCircleMarkerProperties(node, props, previous) {
   if (props.options) {
     node.setAttribute('options', JSON.stringify(props.options))
   }
+
+  if (props.info) {
+    node.instance.mapdomInfo = props.info
+    node.setAttribute('mapdomInfo', JSON.stringify(props.info))
+  }
 }
 
 function processMarkerProperties(node, props, previous) {
