@@ -27,13 +27,14 @@ function jsonAttribute(node, name) {
     return (0, _index.render)(new _virtualDom.VNode('map', { anchorElement: element1 }, [new _virtualDom.VNode('divIcon')]));
   }, 'should throw when given unsupported child element VNode');
   var element2 = document.createElement('div');
-  var vdom = new _virtualDom.VNode('map', { anchorElement: element2, centerZoom: { zoom: 7, center: [4, 5] }, maxBounds: { sw: [1, 2], ne: [3, 5] }, attributes: { class: 'randCN', id: 'someid' } });
+  var vdom = new _virtualDom.VNode('map', { anchorElement: element2, centerZoom: { zoom: 7, center: [4, 5] }, maxBounds: { sw: [1, 2], ne: [3, 5] }, disablePanZoom: true, attributes: { class: 'randCN', id: 'someid' } });
   var dom = (0, _index.render)(vdom);
   assert.equal(dom instanceof Element, true, 'should be instance of Element');
   assert.equal(dom.className, 'randCN', 'should have expected className');
   assert.equal(dom.tagName, "MAP", "should have tagName 'MAP'");
   assert.ok(dom.getAttribute('centerZoom'), "should have centerZoom attribute");
   assert.ok(dom.getAttribute('maxBounds'), "should have maxBounds attribute");
+  assert.ok(dom.getAttribute('disablePanZoom'), "should have disablePanZoom attribute");
   assert.deepEqual(jsonAttribute(dom, 'centerZoom'), { zoom: 7, center: [4, 5] }, "should have expected value");
   assert.equal(dom.id, "someid", "should have expected id");
   assert.ok(dom.instance, 'should have \'instance\' property');

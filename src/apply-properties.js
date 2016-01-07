@@ -77,6 +77,42 @@ function processMapProperties(node, props, previous) {
     node.setAttribute(`maxBounds`, JSON.stringify(llb))
   }
 
+  const map = node.instance
+  if (props.hasOwnProperty(`disablePanZoom`)) {
+    if(props.disableZoom) {
+      map.dragging.disable();
+      map.touchZoom.disable();
+      map.doubleClickZoom.disable();
+      map.scrollWheelZoom.disable();
+      map.keyboard.disable();
+
+      // Disable tap handler, if present.
+      if (map.tap) map.tap.disable();
+
+      node.setAttribute(`disablePanZoom`, true)
+    } else {
+      map.dragging.enable();
+      map.touchZoom.enable();
+      map.doubleClickZoom.enable();
+      map.scrollWheelZoom.enable();
+      map.keyboard.enable();
+
+      // Disable tap handler, if present.
+      if (map.tap) map.tap.enable();
+      node.setAttribute(`disablePanZoom`, false)
+    }
+  } else {
+    map.dragging.enable();
+    map.touchZoom.enable();
+    map.doubleClickZoom.enable();
+    map.scrollWheelZoom.enable();
+    map.keyboard.enable();
+
+    // Disable tap handler, if present.
+    if (map.tap) map.tap.enable();
+    node.removeAttribute(`disablePanZoom`)
+  }
+
   // if(props.anchorElement) {
   //   throw new Error("This property should be stripped out by render/createMapElement.")
   // }

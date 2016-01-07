@@ -108,17 +108,53 @@ function processMapProperties(node, props, previous) {
     var value = _getNewCenterZoom.value;
 
     if (updated) {
-      var map = node.instance;
-      map.setView(value.center, value.zoom, props['zoomPanOptions']);
+      var _map = node.instance;
+      _map.setView(value.center, value.zoom, props['zoomPanOptions']);
       node.setAttribute('centerZoom', JSON.stringify(value));
     }
   }
 
   var llb = props.maxBounds;
   if (llb && Array.isArray(llb.sw) && Array.isArray(llb.ne)) {
-    var map = node.instance;
-    map.setMaxBounds([llb.sw, llb.ne]);
+    var _map2 = node.instance;
+    _map2.setMaxBounds([llb.sw, llb.ne]);
     node.setAttribute('maxBounds', JSON.stringify(llb));
+  }
+
+  var map = node.instance;
+  if (props.hasOwnProperty('disablePanZoom')) {
+    if (props.disableZoom) {
+      map.dragging.disable();
+      map.touchZoom.disable();
+      map.doubleClickZoom.disable();
+      map.scrollWheelZoom.disable();
+      map.keyboard.disable();
+
+      // Disable tap handler, if present.
+      if (map.tap) map.tap.disable();
+
+      node.setAttribute('disablePanZoom', true);
+    } else {
+      map.dragging.enable();
+      map.touchZoom.enable();
+      map.doubleClickZoom.enable();
+      map.scrollWheelZoom.enable();
+      map.keyboard.enable();
+
+      // Disable tap handler, if present.
+      if (map.tap) map.tap.enable();
+      node.setAttribute('disablePanZoom', false);
+    }
+  } else {
+    map.dragging.enable();
+    map.touchZoom.enable();
+    map.doubleClickZoom.enable();
+    map.scrollWheelZoom.enable();
+    map.keyboard.enable();
+
+    // Disable tap handler, if present.
+    if (map.tap) map.tap.enable();
+    node.removeAttribute('disablePanZoom');
   }
 
   // if(props.anchorElement) {
