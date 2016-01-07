@@ -114,6 +114,13 @@ function processMapProperties(node, props, previous) {
     }
   }
 
+  var llb = props.maxBounds;
+  if (llb && Array.isArray(llb.sw) && Array.isArray(llb.ne)) {
+    var map = node.instance;
+    map.setMaxBounds([llb.sw, llb.ne]);
+    node.setAttribute('maxBounds', JSON.stringify(llb));
+  }
+
   // if(props.anchorElement) {
   //   throw new Error("This property should be stripped out by render/createMapElement.")
   // }
