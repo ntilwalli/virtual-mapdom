@@ -66,8 +66,15 @@ function processMapProperties(node, props, previous) {
     if(updated) {
       const map = node.instance
       map.setView(value.center, value.zoom, props['zoomPanOptions'])
-      node.setAttribute('centerZoom', JSON.stringify(value))
+      node.setAttribute(`centerZoom`, JSON.stringify(value))
     }
+  }
+
+  const llb = props.maxBounds
+  if (llb && Array.isArray(llb.sw) && Array.isArray(llb.ne)) {
+    const map = node.instance
+    map.setMaxBounds([llb.sw, llb.ne])
+    node.setAttribute(`maxBounds`, JSON.stringify(llb))
   }
 
   // if(props.anchorElement) {
