@@ -79,7 +79,7 @@ function processMapProperties(node, props, previous) {
 
   const map = node.instance
   if (props.hasOwnProperty(`disablePanZoom`)) {
-    if(props.disableZoom) {
+    if(props.disablePanZoom) {
       map.dragging.disable();
       map.touchZoom.disable();
       map.doubleClickZoom.disable();
