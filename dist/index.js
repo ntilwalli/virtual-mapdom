@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.createMapOnElement = exports.render = exports.patchRecursive = undefined;
+exports.getMapFromElement = exports.removeMapFromElement = exports.createMapOnElement = exports.render = exports.patchRecursive = undefined;
 
 var _patch = require('./src/patch');
 
@@ -51,6 +51,16 @@ function createMapOnElement(anchorElement, accessToken, initialVDom, opts) {
   return initialVDom;
 }
 
+function removeMapFromElement(anchorElement) {
+  delete anchorElement.mapDOM;
+}
+
+function getMapFromElement(anchorElement) {
+  return anchorElement.mapDOM;
+}
+
 exports.patchRecursive = _patch.patchRecursive;
 exports.render = _createElement.createMapElement;
 exports.createMapOnElement = createMapOnElement;
+exports.removeMapFromElement = removeMapFromElement;
+exports.getMapFromElement = getMapFromElement;

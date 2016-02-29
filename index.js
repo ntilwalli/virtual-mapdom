@@ -4,7 +4,7 @@ import {VNode} from 'virtual-dom'
 import L from 'mapbox.js'
 //import * as document from 'global/document'
 
-function createMapOnElement(anchorElement, accessToken, initialVDom, opts) {
+function createMapOnElement (anchorElement, accessToken, initialVDom, opts) {
 
   if(!anchorElement || !accessToken || !initialVDom) {
     throw new Error(`createMapOnElement missing required argument.`)
@@ -36,8 +36,18 @@ function createMapOnElement(anchorElement, accessToken, initialVDom, opts) {
   return initialVDom
 }
 
+function removeMapFromElement (anchorElement) {
+  delete anchorElement.mapDOM
+}
+
+function getMapFromElement (anchorElement) {
+  return anchorElement.mapDOM
+}
+
 export {
   patchRecursive,
   render,
-  createMapOnElement
+  createMapOnElement,
+  removeMapFromElement,
+  getMapFromElement
 }
