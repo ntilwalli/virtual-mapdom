@@ -21,7 +21,9 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 //import * as document from 'global/document'
 
+
 var templateUrlRE = new RegExp("https?://.*{}.*"); /* */
+
 
 function getTileLayer(tileStyle, options) {
   if (templateUrlRE.test(tileStyle)) {
@@ -34,11 +36,15 @@ function getTileLayer(tileStyle, options) {
 }
 
 function validMapChild(vNode) {
+  if (!vNode) return false;
+
   var tagName = vNode.tagName.toUpperCase();
   return tagName === 'TILELAYER' || tagName === 'CIRCLEMARKER' || tagName === 'MARKER' || tagName === 'LAYERGROUP' || tagName === 'FEATUREGROUP';
 }
 
 function validLayerGroupChild(vNode) {
+  if (!vNode) return false;
+
   var tagName = vNode.tagName.toUpperCase();
   return tagName === 'CIRCLEMARKER' || tagName === 'MARKER' || tagName === 'LAYERGROUP' || tagName === 'FEATUREGROUP';
 }
@@ -54,6 +60,8 @@ function validTileLayerParent(vNode) {
 }
 
 function validFeatureGroupChild(vNode) {
+  if (!vNode) return false;
+
   var tagName = vNode.tagName.toUpperCase();
   return tagName === 'CIRCLEMARKER' || tagName === 'MARKER' || tagName === 'LAYERGROUP' || tagName === 'FEATUREGROUP';
 }
@@ -64,6 +72,8 @@ function validFeatureGroupParent(vNode) {
 }
 
 function validMarkerChild(vNode) {
+  if (!vNode) return false;
+
   var tagName = vNode.tagName.toUpperCase();
   return tagName === 'DIVICON' || tagName === 'ICON';
 }
@@ -96,12 +106,11 @@ function createMapElement(vnode, renderOpts, parent) {
   var node = document.createElement(tagName);
   var properties = vnode.properties;
   var options = properties.options || {};
-  var inst = undefined,
-      latLng = undefined,
-      radius = undefined,
-      children = undefined,
-      child = undefined,
-      childTagName = undefined;
+  var inst = void 0,
+      latLng = void 0,
+      radius = void 0,
+      children = void 0,
+      child = void 0;
   switch (tagName) {
     case 'MAP':
       if (!properties.anchorElement) throw new Error('\'anchorElement\' must be given as property when creating a map.');
@@ -159,7 +168,6 @@ function createMapElement(vnode, renderOpts, parent) {
       children = vnode.children;
       for (var i = 0; i < children.length; i++) {
         child = children[i];
-        childTagName = child.tagName.toUpperCase();
         if (validFeatureGroupChild(child)) {
           var childNode = createMapElement(children[i], renderOpts, node);
           if (childNode) {
@@ -224,12 +232,18 @@ function createMapElement(vnode, renderOpts, parent) {
       children = vnode.children;
       // Will default to new L.Icon.Default() no icon children defined
       if (children.length) {
-        child = children[0];
-        childTagName = child.tagName.toUpperCase();
-        if (validMarkerChild(child)) {
-          var _childNode = createMapElement(child, renderOpts); // consciously not sending parent here
-          node.appendChild(_childNode);
-          options.icon = _childNode.instance;
+        if (children.length === 1) {
+          child = children[0];
+          if (child) {
+            // allowed to be non-truthy, then skip
+            if (validMarkerChild(child)) {
+              var _childNode = createMapElement(child, renderOpts); // consciously not sending parent here
+              node.appendChild(_childNode);
+              options.icon = _childNode.instance;
+            }
+          }
+        } else {
+          throw new Error('Marker may only have one child');
         }
       }
 

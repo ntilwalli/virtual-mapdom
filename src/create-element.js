@@ -17,6 +17,8 @@ export function getTileLayer (tileStyle, options) {
 }
 
 function validMapChild (vNode) {
+  if (!vNode) return false
+
   const tagName = vNode.tagName.toUpperCase()
   return tagName === `TILELAYER` || tagName === `CIRCLEMARKER` ||
          tagName === `MARKER` || tagName === `LAYERGROUP` ||
@@ -24,6 +26,8 @@ function validMapChild (vNode) {
 }
 
 function validLayerGroupChild (vNode) {
+  if (!vNode) return false
+
   const tagName = vNode.tagName.toUpperCase()
   return tagName === `CIRCLEMARKER` || tagName === `MARKER` ||
          tagName === `LAYERGROUP` || tagName === `FEATUREGROUP`
@@ -41,6 +45,8 @@ function validTileLayerParent (vNode) {
 }
 
 function validFeatureGroupChild (vNode) {
+  if (!vNode) return false
+
   const tagName = vNode.tagName.toUpperCase()
   return tagName === `CIRCLEMARKER` || tagName === `MARKER` ||
          tagName === `LAYERGROUP` || tagName === `FEATUREGROUP`
@@ -53,6 +59,8 @@ function validFeatureGroupParent (vNode) {
 }
 
 function validMarkerChild (vNode) {
+  if (!vNode) return false
+
   const tagName = vNode.tagName.toUpperCase()
   return tagName === `DIVICON` || tagName === `ICON`
 }
@@ -86,7 +94,7 @@ export function createMapElement (vnode, renderOpts, parent) {
   var node = document.createElement(tagName)
   let properties = vnode.properties
   let options = properties.options || {}
-  let inst, latLng, radius, children, child, childTagName
+  let inst, latLng, radius, children, child
   switch(tagName) {
     case 'MAP':
       if (!properties.anchorElement) throw new Error(`'anchorElement' must be given as property when creating a map.`)
@@ -144,7 +152,6 @@ export function createMapElement (vnode, renderOpts, parent) {
       children = vnode.children;
       for (var i = 0; i < children.length; i++) {
         child = children[i]
-        childTagName = child.tagName.toUpperCase()
         if (validFeatureGroupChild(child)) {
           var childNode = createMapElement(children[i], renderOpts, node);
           if (childNode) {
@@ -209,12 +216,17 @@ export function createMapElement (vnode, renderOpts, parent) {
       children = vnode.children;
       // Will default to new L.Icon.Default() no icon children defined
       if(children.length) {
-        child = children[0]
-        childTagName = child.tagName.toUpperCase()
-        if (validMarkerChild(child)) {
-          let childNode = createMapElement(child, renderOpts); // consciously not sending parent here
-          node.appendChild(childNode);
-          options.icon = childNode.instance
+        if (children.length === 1) {
+          child = children[0]
+          if (child) { // allowed to be non-truthy, then skip
+            if (validMarkerChild(child)) {
+              let childNode = createMapElement(child, renderOpts); // consciously not sending parent here
+              node.appendChild(childNode);
+              options.icon = childNode.instance
+            }
+          }
+        } else {
+          throw new Error(`Marker may only have one child`)
         }
       }
 
