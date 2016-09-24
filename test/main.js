@@ -29,6 +29,29 @@ test("render map", assert => {
   assert.end()
 })
 
+test("render map with offset", assert => {
+  assert.throws(() => render(new VNode(`map`), {}), `should throw when missing 'anchorElement' in properties`)
+  const element1 = document.createElement('div')
+  assert.throws(() => render(new VNode(`map`, {anchorElement: element1}, [
+    new VNode(`divIcon`)
+  ])), `should throw when given unsupported child element VNode`)
+  const element2 = document.createElement('div')
+  const vdom = new VNode('map', {anchorElement: element2, centerZoom: {zoom: 7, center: [4, 5]}, offset: [-20, 30], maxBounds: {sw: [1,2], ne: [3,5]}, disablePanZoom: true, attributes: {class: `randCN`, id: `someid`}})
+  const dom = render(vdom)
+  assert.equal(dom instanceof Element, true, `should be instance of Element`)
+  assert.equal(dom.className, `randCN`, `should have expected className`)
+  assert.equal(dom.tagName, "MAP", "should have tagName 'MAP'")
+  assert.deepEqual(jsonAttribute(dom, 'offset'), [-20, 30])
+  assert.ok(dom.getAttribute('centerZoom'), "should have centerZoom attribute")
+  assert.ok(dom.getAttribute('maxBounds'), "should have maxBounds attribute")
+  assert.ok(dom.getAttribute('disablePanZoom'), "should have disablePanZoom attribute")
+  assert.deepEqual(jsonAttribute(dom, 'centerZoom'), {zoom: 7, center: [4, 5]}, "should have expected value")
+  assert.equal(dom.id, "someid", "should have expected id")
+  assert.ok(dom.instance, `should have 'instance' property`)
+  assert.equal(dom.instance instanceof L.Map, true, "should be an L.Map")
+  assert.end()
+})
+
 test("createMapOnElement", assert => {
   assert.throws(() => createMapOnElement(), "should throw when missing required arguments")
   const element = document.createElement('div')

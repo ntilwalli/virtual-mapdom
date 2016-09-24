@@ -87,6 +87,13 @@ function getLatLng(patch, previous) {
   return [lat, lng];
 }
 
+function getOffset(patch, previous) {
+  var x = patch && patch[0] || previous && previous[0];
+  var y = patch && patch[1] || previous && previous[1];
+
+  return [x, y];
+}
+
 function getNewCenterZoom(patchProps, previousProps) {
   var _ref = previousProps || { center: [9999, 9999], zoom: 9999 };
 
@@ -101,25 +108,55 @@ function getNewCenterZoom(patchProps, previousProps) {
   };
 }
 
+function getNewOffset(patchProps, previousProps) {
+  var offset = previousProps || [0, 0];
+  var newOffset = getOffset(patchProps, offset);
+  return {
+    updated: !(newOffset[0] === offset[0] && newOffset[1] === offset[1]),
+    value: newOffset
+  };
+}
+
 function processMapProperties(node, props, previous) {
   //console.log('processMapProperties')
-  if (props.centerZoom) {
+  if (props.offset) {
+    var centerZoom = getNewCenterZoom(props.centerZoom || {}, previous ? previous.centerZoom : previous);
+    var offset = getNewOffset(props.offset, previous ? previous.offset : previous);
+    if (centerZoom.updated || offset.updated) {
+      var _map = node.instance;
+      var _centerZoom$value = centerZoom.value;
+      var center = _centerZoom$value.center;
+      var zoom = _centerZoom$value.zoom;
+
+      var _offset$value = _slicedToArray(offset.value, 2);
+
+      var x = _offset$value[0];
+      var y = _offset$value[1];
+
+      var newCenter = _map.project(center, zoom);
+      var shiftedCenter = newCenter.subtract([x, y]);
+      var newLatLng = _map.unproject(shiftedCenter, zoom);
+      _map.setView(newLatLng, zoom, props['zoomPanOptions']);
+      node.setAttribute('centerZoom', JSON.stringify(centerZoom.value));
+      node.setAttribute('offset', JSON.stringify(offset.value));
+    }
+  } else if (props.centerZoom) {
     var _getNewCenterZoom = getNewCenterZoom(props.centerZoom, previous ? previous.centerZoom : previous);
 
     var updated = _getNewCenterZoom.updated;
     var value = _getNewCenterZoom.value;
 
     if (updated) {
-      var _map = node.instance;
-      _map.setView(value.center, value.zoom, props['zoomPanOptions']);
+      var _map2 = node.instance;
+      _map2.setView(value.center, value.zoom, props['zoomPanOptions']);
       node.setAttribute('centerZoom', JSON.stringify(value));
     }
   }
 
   var llb = props.maxBounds;
   if (llb && Array.isArray(llb.sw) && Array.isArray(llb.ne)) {
-    var _map2 = node.instance;
-    _map2.setMaxBounds([llb.sw, llb.ne]);
+    var _map3 = node.instance;
+    _map3.setMaxBounds([llb.sw, llb.ne]);
     node.setAttribute('maxBounds', JSON.stringify(llb));
   }
 

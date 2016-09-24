@@ -49,6 +49,13 @@ function getLatLng(patch, previous) {
   return [lat, lng]
 }
 
+function getOffset(patch, previous) {
+  var x = (patch && patch[0] ) || (previous && previous[0]);
+  var y = (patch && patch[1]) || (previous && previous[1]);
+
+  return [x, y]
+}
+
 function getNewCenterZoom(patchProps, previousProps) {
   const {center, zoom} = previousProps || {center: [9999, 9999], zoom: 9999}
   const newCenter = getLatLng(patchProps.center, center)
@@ -59,9 +66,32 @@ function getNewCenterZoom(patchProps, previousProps) {
   }
 }
 
+function getNewOffset(patchProps, previousProps) {
+  const offset = previousProps || [0, 0]
+  const newOffset = getOffset(patchProps, offset)
+  return {
+    updated: !(newOffset[0] === offset[0] && newOffset[1] === offset[1]),
+    value: newOffset
+  }
+}
+
 function processMapProperties(node, props, previous) {
   //console.log('processMapProperties')
-  if(props.centerZoom) {
+  if (props.offset) {
+    const centerZoom = getNewCenterZoom(props.centerZoom || {}, previous ? previous.centerZoom : previous)
+    const offset = getNewOffset(props.offset, previous ? previous.offset : previous)
+    if (centerZoom.updated || offset.updated) {
+      const map = node.instance
+      const {center, zoom} = centerZoom.value
+      const [x, y] = offset.value
+      const newCenter = map.project(center, zoom)
+      const shiftedCenter = newCenter.subtract([x, y])
+      const newLatLng = map.unproject(shiftedCenter, zoom)
+      map.setView(newLatLng, zoom, props['zoomPanOptions'])
+      node.setAttribute(`centerZoom`, JSON.stringify(centerZoom.value))
+      node.setAttribute(`offset`, JSON.stringify(offset.value))
+    }
+  } else if(props.centerZoom) {
     const {updated, value} = getNewCenterZoom(props.centerZoom, previous ? previous.centerZoom : previous)
     if(updated) {
       const map = node.instance
