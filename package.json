@@ -1,6 +1,6 @@
 {
   "name": "virtual-mapdom",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "DOM for maps integrating with virtual-dom for use with MapboxJS",
   "main": "./dist/index.js",
   "scripts": {
@@ -25,9 +25,8 @@
     "deep-assign": "^2.0.0",
     "global": "^4.3.0",
     "is-object": "^1.0.1",
-    "mapbox.js": "^2.2.3",
-    "virtual-dom": "^2.1.1",
-    "x-is-array": "^0.1.0"
+    "mapbox.js": "^2.4.0",
+    "virtual-dom": "^2.1.1"
   },
   "devDependencies": {
     "babel-preset-es2015": "^6.3.13",

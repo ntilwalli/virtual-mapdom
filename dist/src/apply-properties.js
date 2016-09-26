@@ -14,10 +14,6 @@ var _isObject = require('is-object');
 
 var _isObject2 = _interopRequireDefault(_isObject);
 
-var _xIsArray = require('x-is-array');
-
-var _xIsArray2 = _interopRequireDefault(_xIsArray);
-
 var _deepAssign = require('deep-assign');
 
 var _deepAssign2 = _interopRequireDefault(_deepAssign);

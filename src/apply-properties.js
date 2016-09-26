@@ -1,6 +1,5 @@
 /* */
 import isObject from 'is-object'
-import isArray from 'x-is-array'
 import deepAssign from 'deep-assign'
 import L from 'mapbox.js'
 import {getMarkerIcon, getTileLayer} from './create-element'

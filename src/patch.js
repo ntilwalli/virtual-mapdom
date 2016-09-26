@@ -1,4 +1,3 @@
-import isArray from 'x-is-array'
 import {domIndex} from './dom-index'
 import {applyPatch as patchOp} from './patch-op'
 
@@ -33,7 +32,7 @@ function applyPatch(rootNode, domNode, patchList, renderOptions) {
   }
   var newNode;
 
-  if (isArray(patchList)) {
+  if (Array.isArray(patchList)) {
     for (var i = 0; i < patchList.length; i++) {
 
       newNode = patchOp(patchList[i], domNode, renderOptions);

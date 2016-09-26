@@ -5,15 +5,9 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.patchRecursive = patchRecursive;
 
-var _xIsArray = require('x-is-array');
-
-var _xIsArray2 = _interopRequireDefault(_xIsArray);
-
 var _domIndex = require('./dom-index');
 
 var _patchOp = require('./patch-op');
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function patchRecursive(rootNode, patches, renderOptions) {
   //console.log('Called patchRecursive...')
@@ -46,7 +40,7 @@ function applyPatch(rootNode, domNode, patchList, renderOptions) {
   }
   var newNode;
 
-  if ((0, _xIsArray2.default)(patchList)) {
+  if (Array.isArray(patchList)) {
     for (var i = 0; i < patchList.length; i++) {
 
       newNode = (0, _patchOp.applyPatch)(patchList[i], domNode, renderOptions);
