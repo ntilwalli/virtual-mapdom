@@ -1,6 +1,6 @@
 {
   "name": "virtual-mapdom",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "DOM for maps integrating with virtual-dom for use with MapboxJS",
   "main": "./dist/index.js",
   "scripts": {
