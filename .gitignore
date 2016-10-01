@@ -1,0 +1,4 @@
+dist
+npm-debug*.*
+typings
+node_modules

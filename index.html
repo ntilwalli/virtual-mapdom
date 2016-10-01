@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mocha Tests</title>
+  <link href="node_modules/mocha/mocha.css" rel="stylesheet" />
+  <link href='node_modules/mapbox-gl/dist/mapbox-gl.css' rel='stylesheet' />
+  <style>
+    #mapdiv {
+      height: 300px;
+    }
+  </style>
+</head>
+<body>
+  <div id="mocha"></div>
+  <div id="mapdiv"></div>
+  <script src="node_modules/mocha/mocha.js"></script>
+  <script src="node_modules/chai/chai.js"></script>
+  <script src="node_modules/mapbox-gl/dist/mapbox-gl.js"></script>
+  <script src="dist/test/test.js"></script>
+</body>
+</html>
